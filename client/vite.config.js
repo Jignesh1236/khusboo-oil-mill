@@ -41,7 +41,12 @@ export default defineConfig({
       '/api': {
         target: 'https://e-commerce-7ktz.onrender.com',
         changeOrigin: true,
-        secure: true
+        secure: true,
+        configure: (proxy, options) => {
+          proxy.on('proxyReq', (proxyReq, req, res) => {
+            console.log('Proxying:', req.method, req.url);
+          });
+        }
       }
     }
   }
