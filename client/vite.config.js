@@ -44,6 +44,7 @@ export default defineConfig({
         secure: true,
         configure: (proxy, options) => {
           proxy.on('proxyReq', (proxyReq, req, res) => {
+<<<<<<< HEAD
             console.log(`→ ${req.method} ${req.url}`)
           })
           proxy.on('proxyRes', (proxyRes, req, res) => {
@@ -56,6 +57,10 @@ export default defineConfig({
           proxy.on('error', (err, req, res) => {
             console.error(`✗ PROXY ERROR ${req.method} ${req.url}: ${err.message}`)
           })
+=======
+            console.log('Proxying:', req.method, req.url);
+          });
+>>>>>>> 91fa3822f2b926aad7d4974682307d53653be427
         }
       }
     }
