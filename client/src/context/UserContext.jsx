@@ -3,6 +3,15 @@ import api from '../utils/api'
 
 const UserContext = createContext()
 
+function getDeviceId() {
+  let id = localStorage.getItem('deviceId')
+  if (!id) {
+    id = 'dev-' + Math.random().toString(36).slice(2) + '-' + Date.now().toString(36)
+    localStorage.setItem('deviceId', id)
+  }
+  return id
+}
+
 export function UserProvider({ children }) {
   const [user, setUser] = useState(() => {
     try { return JSON.parse(localStorage.getItem('storeUser')) } catch { return null }
@@ -12,7 +21,7 @@ export function UserProvider({ children }) {
   const checkIP = async () => {
     try {
       setLoading(true)
-      const res = await api.post('/users/check-ip')
+      const res = await api.post('/users/check-ip', { ip: getDeviceId() })
       if (res.data.user) {
         setUser(res.data.user)
         localStorage.setItem('storeUser', JSON.stringify(res.data.user))
@@ -27,7 +36,7 @@ export function UserProvider({ children }) {
   }
 
   const onboard = async (data) => {
-    const res = await api.post('/users/onboard', data)
+    const res = await api.post('/users/onboard', { ...data, ip: getDeviceId() })
     setUser(res.data.user)
     localStorage.setItem('storeUser', JSON.stringify(res.data.user))
     return res.data.user
