@@ -117,7 +117,7 @@ export default function AdminOrders() {
                 <TableCell className="font-mono text-xs">{order._id.slice(-8).toUpperCase()}</TableCell>
                 <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
                 <TableCell>{order.userName || "Guest"}</TableCell>
-                <TableCell>${order.totalAmount.toFixed(2)}</TableCell>
+                <TableCell>₹{order.totalAmount.toFixed(2)}</TableCell>
                 <TableCell>
                   <Select value={order.status} onValueChange={(val) => handleStatusChange(order._id, val)}>
                     <SelectTrigger className={`h-8 text-xs ${getStatusColor(order.status)}`}>
@@ -171,7 +171,7 @@ export default function AdminOrders() {
               <div className="grid grid-cols-2 gap-4 bg-muted/50 p-4 rounded-lg">
                 <div>
                   <h4 className="font-semibold text-sm mb-1">Customer Info</h4>
-                  <p className="text-sm">{viewingOrder.address.name}</p>
+                  <p className="text-sm">{viewingOrder.address.fullName || viewingOrder.userName || "Guest"}</p>
                   <p className="text-sm">{viewingOrder.address.phone}</p>
                   <a 
                     href={`https://wa.me/${viewingOrder.address.phone}`} 
@@ -184,7 +184,9 @@ export default function AdminOrders() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-sm mb-1">Delivery Address</h4>
-                  <p className="text-sm">{viewingOrder.address.fullAddress}</p>
+                  <p className="text-sm">{viewingOrder.address.houseFlatBuilding}</p>
+                  <p className="text-sm">{viewingOrder.address.streetArea}</p>
+                  <p className="text-sm">{viewingOrder.address.city}, {viewingOrder.address.state}, {viewingOrder.address.country}</p>
                   {viewingOrder.address.landmark && <p className="text-sm">Landmark: {viewingOrder.address.landmark}</p>}
                   <p className="text-sm">Pincode: {viewingOrder.address.pincode}</p>
                 </div>

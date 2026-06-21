@@ -8,11 +8,15 @@ export interface IOrderItem {
 }
 
 export interface IOrderAddress {
-  name: string;
+  fullName: string;
   phone: string;
-  fullAddress: string;
-  landmark?: string;
+  houseFlatBuilding: string;
+  streetArea: string;
+  city: string;
+  state: string;
   pincode: string;
+  country: string;
+  landmark?: string;
 }
 
 export interface IStatusHistory {
@@ -45,11 +49,15 @@ const OrderSchema = new Schema<IOrder>(
       },
     ],
     address: {
-      name: { type: String, required: true },
+      fullName: { type: String, required: true },
       phone: { type: String, required: true },
-      fullAddress: { type: String, required: true },
-      landmark: { type: String },
+      houseFlatBuilding: { type: String, required: true },
+      streetArea: { type: String, required: true },
+      city: { type: String, required: true },
+      state: { type: String, required: true },
       pincode: { type: String, required: true },
+      country: { type: String, required: true },
+      landmark: { type: String },
     },
     totalAmount: { type: Number, required: true },
     deliveryCharge: { type: Number, default: 0 },

@@ -103,7 +103,13 @@ export default function Orders() {
               <div className="p-4 bg-muted/10 border-t text-sm space-y-2">
                 <div className="flex gap-2 items-start">
                   <MapPin className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
-                  <span className="text-muted-foreground">{order.address.fullAddress}, {order.address.pincode}</span>
+                  <div className="text-muted-foreground">
+                    <p>{order.address.fullName || "Customer"}</p>
+                    <p>{order.address.houseFlatBuilding}</p>
+                    <p>{order.address.streetArea}</p>
+                    <p>{order.address.city}, {order.address.state}, {order.address.country} - {order.address.pincode}</p>
+                    {order.address.landmark && <p>Landmark: {order.address.landmark}</p>}
+                  </div>
                 </div>
                 <div className="flex gap-2 items-center">
                   <Phone className="h-4 w-4 shrink-0 text-muted-foreground" />

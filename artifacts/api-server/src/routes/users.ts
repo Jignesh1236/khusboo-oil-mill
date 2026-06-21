@@ -23,7 +23,12 @@ router.post("/users/onboard", async (req, res) => {
     const { name, ip, source, address, phone } = req.body;
     const existing = await User.findOne({ ip });
     if (existing) {
-      res.status(200).json(existing);
+      // Update existing user
+      existing.name = name || existing.name;
+      existing.address = address || existing.address;
+      existing.phone = phone || existing.phone;
+      const updatedUser = await existing.save();
+      res.status(200).json(updatedUser);
       return;
     }
     const user = new User({ name, ip, source, address, phone });

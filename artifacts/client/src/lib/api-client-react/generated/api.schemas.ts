@@ -18,12 +18,24 @@ export interface IpCheckInput {
   ip: string;
 }
 
+export interface UserAddress {
+  fullName?: string;
+  phone?: string;
+  houseFlatBuilding?: string;
+  streetArea?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  country?: string;
+  landmark?: string;
+}
+
 export interface User {
   _id: string;
   name: string;
   ip: string;
   source?: string;
-  address?: string;
+  address?: UserAddress;
   phone?: string;
   createdAt: string;
 }
@@ -37,7 +49,7 @@ export interface UserInput {
   name: string;
   ip: string;
   source?: string;
-  address?: string;
+  address?: UserAddress;
   phone?: string;
 }
 
@@ -91,11 +103,15 @@ export interface OrderItem {
 }
 
 export interface OrderAddress {
-  name: string;
+  fullName: string;
   phone: string;
-  fullAddress: string;
-  landmark?: string;
+  houseFlatBuilding: string;
+  streetArea: string;
+  city: string;
+  state: string;
   pincode: string;
+  country: string;
+  landmark?: string;
 }
 
 export interface OrderInput {
