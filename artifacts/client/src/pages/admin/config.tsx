@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useGetConfig, useUpdateConfig, type StoreConfigInput } from "./lib/api-client-react";
+import { useGetConfig, useUpdateConfig, type StoreConfigInput } from "@/lib/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

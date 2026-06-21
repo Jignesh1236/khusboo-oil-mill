@@ -1,4 +1,4 @@
-import { useListBanners, useListCategories, useListFeaturedProducts, useListProducts } from "./lib/api-client-react";
+import { useListBanners, useListCategories, useListFeaturedProducts, useListProducts } from "@/lib/api-client-react";
 import { ProductCard } from "@/components/product-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link, useSearch } from "wouter";

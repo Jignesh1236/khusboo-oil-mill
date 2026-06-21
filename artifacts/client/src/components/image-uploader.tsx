@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useUploadImage } from "./lib/api-client-react";
+import { useUploadImage } from "@/lib/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Image as ImageIcon, Loader2, Upload, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";

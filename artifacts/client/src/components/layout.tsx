@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Home, ShoppingCart, Heart, Clock, User, Settings, Package, Users, LayoutDashboard, Image as ImageIcon, Tags, LogOut, Search, X } from "lucide-react";
-import { useGetConfig } from "./lib/api-client-react";
+import { useGetConfig } from "@/lib/api-client-react";
 import { useCart } from "@/hooks/use-cart";
 import { useStoreUser, useAdminToken } from "@/hooks/use-store-user";
 import { ThemeToggle } from "./theme-toggle";

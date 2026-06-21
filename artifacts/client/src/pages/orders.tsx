@@ -1,4 +1,4 @@
-import { useGetUserOrders } from "./lib/api-client-react";
+import { useGetUserOrders } from "@/lib/api-client-react";
 import { useStoreUser } from "@/hooks/use-store-user";
 import { useCurrency } from "@/hooks/use-currency";
 import { Skeleton } from "@/components/ui/skeleton";

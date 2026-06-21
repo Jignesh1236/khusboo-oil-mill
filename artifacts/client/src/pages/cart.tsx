@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { useCart } from "@/hooks/use-cart";
 import { useStoreUser } from "@/hooks/use-store-user";
-import { useGetConfig } from "./lib/api-client-react";
+import { useGetConfig } from "@/lib/api-client-react";
 import { useCurrency } from "@/hooks/use-currency";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, Trash2, ArrowRight } from "lucide-react";

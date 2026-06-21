@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { StoreLayout, AdminLayout } from "@/components/layout";
 import { IPGuard, AdminGuard } from "@/components/guards";
-import { setAuthTokenGetter, setBaseUrl } from "./lib/api-client-react";
+import { setAuthTokenGetter, setBaseUrl } from "@/lib/api-client-react";
 
 // Set base URL to Render backend
 setBaseUrl("https://e-commerce-7ktz.onrender.com");

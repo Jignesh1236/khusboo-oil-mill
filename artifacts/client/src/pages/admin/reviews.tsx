@@ -2,7 +2,7 @@ import {
   useListAllReviews, 
   useDeleteReview,
   getListAllReviewsQueryKey
-} from "./lib/api-client-react";
+} from "@/lib/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
