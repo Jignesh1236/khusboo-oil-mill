@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: e-commerce
+    env: node
+    plan: free
+    buildCommand: pnpm install && pnpm run build
+    startCommand: cd artifacts/api-server && pnpm run start
+    autoDeploy: true
+    repo: https://github.com/Jignesh1236/khusboo-oil-mill
+    branch: main
