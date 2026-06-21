@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: e-commerce
+    env: node
+    plan: free
+    buildCommand: npm install --legacy-peer-deps && npm run build
+    startCommand: npm run start
+    autoDeploy: true
+    repo: https://github.com/Jignesh1236/khusboo-oil-mill
+    branch: main
+    rootDir: artifacts/api-server
