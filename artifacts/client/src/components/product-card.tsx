@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import type { Product } from "@workspace/api-client-react";
+import type { Product } from "./lib/api-client-react";
 import { useCurrency } from "@/hooks/use-currency";
 
 export function ProductCard({ product }: { product: Product }) {

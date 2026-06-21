@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useOnboardUser } from "@workspace/api-client-react";
+import { useOnboardUser } from "./lib/api-client-react";
 import { useStoreUser } from "@/hooks/use-store-user";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

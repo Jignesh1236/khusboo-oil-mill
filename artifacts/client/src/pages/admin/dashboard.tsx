@@ -1,4 +1,4 @@
-import { useGetDashboard } from "@workspace/api-client-react";
+import { useGetDashboard } from "./lib/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Package, DollarSign, Users, TrendingUp } from "lucide-react";

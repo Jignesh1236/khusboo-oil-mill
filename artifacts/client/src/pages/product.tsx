@@ -11,7 +11,7 @@ import {
   useRemoveFromWishlist,
   getGetProductReviewsQueryKey,
   getGetWishlistQueryKey
-} from "@workspace/api-client-react";
+} from "./lib/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCart } from "@/hooks/use-cart";
 import { useStoreUser } from "@/hooks/use-store-user";

@@ -7,7 +7,7 @@ import {
   useListCategories,
   getListProductsQueryKey,
   type ProductInput
-} from "@workspace/api-client-react";
+} from "./lib/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

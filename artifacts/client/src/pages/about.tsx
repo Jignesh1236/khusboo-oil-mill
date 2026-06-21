@@ -1,4 +1,4 @@
-import { useGetConfig } from "@workspace/api-client-react";
+import { useGetConfig } from "./lib/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin, Phone, Mail, Clock, Instagram, Facebook } from "lucide-react";
 

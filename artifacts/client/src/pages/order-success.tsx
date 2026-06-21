@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "wouter";
-import { useGetConfig } from "@workspace/api-client-react";
+import { useGetConfig } from "./lib/api-client-react";
 import { useCart } from "@/hooks/use-cart";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";

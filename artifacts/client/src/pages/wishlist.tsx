@@ -1,4 +1,4 @@
-import { useGetWishlist } from "@workspace/api-client-react";
+import { useGetWishlist } from "./lib/api-client-react";
 import { useStoreUser } from "@/hooks/use-store-user";
 import { ProductCard } from "@/components/product-card";
 import { Skeleton } from "@/components/ui/skeleton";

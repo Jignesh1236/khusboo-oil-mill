@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useListUsers, useDeleteUser } from "@workspace/api-client-react";
+import { useListUsers, useDeleteUser } from "./lib/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";

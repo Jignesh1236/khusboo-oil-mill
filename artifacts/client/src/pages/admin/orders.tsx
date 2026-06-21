@@ -3,7 +3,7 @@ import {
   useListOrders, 
   useUpdateOrderStatus,
   getListOrdersQueryKey
-} from "@workspace/api-client-react";
+} from "./lib/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Eye, MessageCircle, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { useGetConfig } from "@workspace/api-client-react";
+import { useGetConfig } from "./lib/api-client-react";
 
 export default function AdminOrders() {
   const queryClient = useQueryClient();

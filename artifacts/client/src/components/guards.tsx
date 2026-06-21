@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useStoreUser } from "@/hooks/use-store-user";
-import { useCheckUserIp } from "@workspace/api-client-react";
+import { useCheckUserIp } from "./lib/api-client-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function IPGuard({ children }: { children: React.ReactNode }) {

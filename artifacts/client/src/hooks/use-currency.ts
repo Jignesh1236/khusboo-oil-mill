@@ -1,4 +1,4 @@
-import { useGetConfig } from "@workspace/api-client-react";
+import { useGetConfig } from "./lib/api-client-react";
 
 export function useCurrency() {
   const { data: config } = useGetConfig();
