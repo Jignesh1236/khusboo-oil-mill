@@ -8,3 +8,6 @@ services:
     autoDeploy: true
     repo: https://github.com/Jignesh1236/khusboo-oil-mill
     branch: main
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
