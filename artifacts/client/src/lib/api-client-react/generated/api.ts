@@ -1184,6 +1184,47 @@ export const useUpdateOrderStatus = <TError = ErrorType<unknown>,
       return useMutation(getUpdateOrderStatusMutationOptions(options));
     }
 
+export const getDeleteOrderUrl = (orderId: string,) => {
+  return `/api/orders/${orderId}`
+}
+
+export const deleteOrder = async (orderId: string, options?: RequestInit): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getDeleteOrderUrl(orderId),
+  {
+    ...options,
+    method: 'DELETE'
+  }
+);}
+
+export const getDeleteOrderMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteOrder>>, TError,{orderId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteOrder>>, TError,{orderId: string}, TContext> => {
+  const mutationKey = ['deleteOrder'];
+  const {mutation: mutationOptions, request: requestOptions} = options ?
+        options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+        options
+        : {...options, mutation: {...options.mutation, mutationKey}}
+        : {mutation: { mutationKey, }, request: undefined};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteOrder>>, {orderId: string}> = (props) => {
+          const {orderId} = props ?? {};
+          return deleteOrder(orderId,requestOptions)
+        }
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteOrderMutationResult = NonNullable<Awaited<ReturnType<typeof deleteOrder>>>
+    export type DeleteOrderMutationError = ErrorType<unknown>
+
+    export const useDeleteOrder = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteOrder>>, TError,{orderId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteOrder>>,
+        TError,
+        {orderId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteOrderMutationOptions(options));
+    }
+
 export const getGetProductReviewsUrl = (productId: string,) => {
 
 
