@@ -207,20 +207,39 @@ export default function AdminOrders() {
                 </div>
               </div>
 
-              {/* Status History */}
+              {/* Status History - Timeline */}
               {viewingOrder.statusHistory && viewingOrder.statusHistory.length > 0 && (
                 <div>
-                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                  <h4 className="font-semibold mb-4 flex items-center gap-2">
                     <Clock className="w-4 h-4" />
                     Status History
                   </h4>
-                  <div className="space-y-2">
+                  <div className="relative pl-6 space-y-4 border-l-2 border-muted">
                     {viewingOrder.statusHistory.map((history: any, idx: number) => (
-                      <div key={idx} className="flex items-center gap-3 p-2 text-sm bg-muted/30 rounded">
-                        <Badge className={getStatusColor(history.status)}>{history.status}</Badge>
-                        <span className="text-muted-foreground">
-                          {new Date(history.timestamp).toLocaleString()}
-                        </span>
+                      <div key={idx} className="relative">
+                        {/* Timeline Dot */}
+                        <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-background ${
+                          history.status.toLowerCase() === 'pending' ? 'bg-yellow-500' :
+                          history.status.toLowerCase() === 'confirmed' ? 'bg-blue-500' :
+                          history.status.toLowerCase() === 'out for delivery' ? 'bg-purple-500' :
+                          history.status.toLowerCase() === 'delivered' ? 'bg-green-500' : 'bg-red-500'
+                        }`} />
+                        
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-muted/30 p-3 rounded-lg">
+                          <Badge className={getStatusColor(history.status)}>
+                            {history.status}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(history.timestamp).toLocaleString('en-IN', { 
+                              weekday: 'short', 
+                              year: 'numeric', 
+                              month: 'short', 
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </span>
+                        </div>
                       </div>
                     ))}
                   </div>
