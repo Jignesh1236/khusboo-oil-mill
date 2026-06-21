@@ -1,18 +1,29 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import { useCart } from "@/hooks/use-cart";
 import { useStoreUser } from "@/hooks/use-store-user";
-import { useGetConfig } from "@/lib/api-client-react";
+import { useGetConfig, useOnboardUser, useCreateOrder } from "@/lib/api-client-react";
 import { useCurrency } from "@/hooks/use-currency";
 import { Button } from "@/components/ui/button";
-import { Minus, Plus, Trash2, ArrowRight } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowRight, X } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function Cart() {
-  const { items, updateQuantity, removeItem, getCartTotal } = useCart();
-  const { user } = useStoreUser();
+  const { items, updateQuantity, removeItem, getCartTotal, clearCart } = useCart();
+  const { user, saveUser } = useStoreUser();
   const { data: config } = useGetConfig();
   const { format, symbol } = useCurrency();
+  const [, setLocation] = useLocation();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [address, setAddress] = useState(user?.address || "");
+  const [phone, setPhone] = useState(user?.phone || "");
+  const onboardUser = useOnboardUser();
+  const createOrder = useCreateOrder();
+  const [isOrdering, setIsOrdering] = useState(false);
 
   const total = getCartTotal();
   const deliveryCharge = config?.deliveryCharge || 0;
@@ -21,26 +32,83 @@ export default function Cart() {
   const isFreeDelivery = total >= freeDeliveryAbove;
   const finalTotal = isFreeDelivery ? total : total + deliveryCharge;
 
-  const handlePlaceOrder = () => {
-    if (!config?.whatsappNumber) return;
-    
-    let message = `*New Order*\n\n`;
-    message += `*Customer:* ${user?.name || 'Guest'}\n`;
-    message += `*Address:* ${user?.address || 'Not provided'}\n`;
-    message += `*Phone:* ${user?.phone || 'Not provided'}\n\n`;
-    
-    message += `*Items:*\n`;
-    items.forEach(item => {
-      const price = item.discountPercent ? item.price * (1 - item.discountPercent / 100) : item.price;
-      message += `- ${item.qty}x ${item.name} (${symbol}${price.toFixed(2)})\n`;
-    });
-    
-    message += `\n*Subtotal:* ${symbol}${total.toFixed(2)}\n`;
-    message += `*Delivery:* ${isFreeDelivery ? 'Free' : `${symbol}${deliveryCharge.toFixed(2)}`}\n`;
-    message += `*Total:* ${symbol}${finalTotal.toFixed(2)}\n`;
-    
-    const encodedMessage = encodeURIComponent(message);
-    window.open(`https://wa.me/${config.whatsappNumber}?text=${encodedMessage}`, '_blank');
+  const handlePlaceOrder = async () => {
+    if (!user || !config?.whatsappNumber) return;
+
+    try {
+      setIsOrdering(true);
+      
+      // Update user info in DB
+      await onboardUser.mutateAsync({
+        data: {
+          name: user.name,
+          ip: user.ip,
+          address,
+          phone
+        }
+      });
+      
+      // Save updated user locally
+      saveUser({
+        ...user,
+        address,
+        phone
+      });
+      
+      // Create order in DB
+      const order = await createOrder.mutateAsync({
+        data: {
+          userId: user._id,
+          items: items.map(item => ({
+            productId: item.productId,
+            name: item.name,
+            price: item.discountPercent ? item.price * (1 - item.discountPercent / 100) : item.price,
+            qty: item.qty
+          })),
+          address: {
+            name: user.name,
+            phone,
+            fullAddress: address,
+            landmark: "",
+            pincode: ""
+          },
+          totalAmount: finalTotal,
+          deliveryCharge: isFreeDelivery ? 0 : deliveryCharge
+        }
+      });
+      
+      // Clear cart
+      clearCart();
+      
+      // Open WhatsApp
+      let message = `*New Order*\n\n`;
+      message += `*Order ID:* ${order._id}\n`;
+      message += `*Customer:* ${user.name}\n`;
+      message += `*Address:* ${address}\n`;
+      message += `*Phone:* ${phone}\n\n`;
+      
+      message += `*Items:*\n`;
+      items.forEach(item => {
+        const price = item.discountPercent ? item.price * (1 - item.discountPercent / 100) : item.price;
+        message += `- ${item.qty}x ${item.name} (${symbol}${price.toFixed(2)})\n`;
+      });
+      
+      message += `\n*Subtotal:* ${symbol}${total.toFixed(2)}\n`;
+      message += `*Delivery:* ${isFreeDelivery ? 'Free' : `${symbol}${deliveryCharge.toFixed(2)}`}\n`;
+      message += `*Total:* ${symbol}${finalTotal.toFixed(2)}\n`;
+      
+      const encodedMessage = encodeURIComponent(message);
+      window.open(`https://wa.me/${config.whatsappNumber}?text=${encodedMessage}`, '_blank');
+      
+      // Redirect to order success page
+      setLocation("/order-success");
+      
+    } catch (error) {
+      console.error("Order failed:", error);
+    } finally {
+      setIsOrdering(false);
+      setIsModalOpen(false);
+    }
   };
 
   if (items.length === 0) {
@@ -138,12 +206,57 @@ export default function Cart() {
               </div>
             </div>
             
-            <Button onClick={handlePlaceOrder} className="w-full mt-6 flex items-center gap-2" size="lg">
+            <Button onClick={() => setIsModalOpen(true)} className="w-full mt-6 flex items-center gap-2" size="lg">
               Place Order via WhatsApp <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </div>
+
+      {/* Address & Phone Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Enter Delivery Details</DialogTitle>
+            <DialogDescription>Please provide your delivery address and phone number</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input 
+                id="phone" 
+                type="tel" 
+                value={phone} 
+                onChange={(e) => setPhone(e.target.value)} 
+                placeholder="Enter your phone number" 
+                required 
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="address">Delivery Address</Label>
+              <Textarea 
+                id="address" 
+                value={address} 
+                onChange={(e) => setAddress(e.target.value)} 
+                placeholder="Enter your full delivery address" 
+                rows={4} 
+                required 
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={handlePlaceOrder} 
+              disabled={!phone.trim() || !address.trim() || isOrdering}
+              className="flex items-center gap-2"
+            >
+              {isOrdering ? "Placing Order..." : "Confirm & Place Order"}
+              {!isOrdering && <ArrowRight className="h-4 w-4" />}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

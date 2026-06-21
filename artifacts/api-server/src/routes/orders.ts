@@ -82,4 +82,13 @@ router.put("/orders/:orderId/status", adminAuth, async (req, res) => {
   }
 });
 
+router.delete("/orders/:orderId", adminAuth, async (req, res) => {
+  try {
+    await Order.findByIdAndDelete(req.params.orderId);
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 export default router;

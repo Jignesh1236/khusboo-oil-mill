@@ -3,7 +3,8 @@ import { useStoreUser } from "@/hooks/use-store-user";
 import { useCurrency } from "@/hooks/use-currency";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Package, MapPin, Phone } from "lucide-react";
+import { Package, MapPin, Phone, Clock } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 export default function Orders() {
   const { user } = useStoreUser();
@@ -68,8 +69,32 @@ export default function Orders() {
                     </div>
                   ))}
                 </div>
+
+                {/* Status History for User */}
+                {order.statusHistory && order.statusHistory.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-muted-foreground" />
+                      Order Tracking
+                    </h4>
+                    <div className="space-y-2">
+                      {order.statusHistory.map((history: any, idx: number) => (
+                        <div key={idx} className="flex items-center gap-3 text-xs">
+                          <Badge className={getStatusColor(history.status)}>
+                            {history.status}
+                          </Badge>
+                          <span className="text-muted-foreground">
+                            {new Date(history.timestamp).toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <Separator className="my-4" />
                 
-                <div className="flex justify-between border-t pt-4 font-bold text-lg">
+                <div className="flex justify-between pt-2 font-bold text-lg">
                   <span>Total</span>
                   <span>{format(order.totalAmount)}</span>
                 </div>

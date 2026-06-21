@@ -2,17 +2,19 @@ import { useState } from "react";
 import { 
   useListOrders, 
   useUpdateOrderStatus,
+  useDeleteOrder,
   getListOrdersQueryKey
 } from "@/lib/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Eye, MessageCircle, Loader2 } from "lucide-react";
+import { Eye, MessageCircle, Loader2, Trash2, Clock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useGetConfig } from "@/lib/api-client-react";
+import { Separator } from "@/components/ui/separator";
 
 export default function AdminOrders() {
   const queryClient = useQueryClient();
@@ -22,8 +24,10 @@ export default function AdminOrders() {
   const { data: config } = useGetConfig();
   const { data: ordersPage, isLoading } = useListOrders({ page, limit: 20, status: statusFilter || undefined });
   const updateStatusMutation = useUpdateOrderStatus();
+  const deleteOrderMutation = useDeleteOrder();
 
   const [viewingOrder, setViewingOrder] = useState<any | null>(null);
+  const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
 
   const handleStatusChange = (orderId: string, newStatus: string) => {
     updateStatusMutation.mutate(
@@ -33,7 +37,30 @@ export default function AdminOrders() {
           queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey() });
           toast({ title: "Order status updated" });
           if (viewingOrder && viewingOrder._id === orderId) {
-            setViewingOrder({ ...viewingOrder, status: newStatus });
+            setViewingOrder({ 
+              ...viewingOrder, 
+              status: newStatus,
+              statusHistory: [
+                ...viewingOrder.statusHistory,
+                { status: newStatus, timestamp: new Date() }
+              ] 
+            });
+          }
+        }
+      }
+    );
+  };
+
+  const handleDeleteOrder = (orderId: string) => {
+    deleteOrderMutation.mutate(
+      { orderId },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey() });
+          toast({ title: "Order deleted" });
+          setDeleteOrderId(null);
+          if (viewingOrder && viewingOrder._id === orderId) {
+            setViewingOrder(null);
           }
         }
       }
@@ -109,6 +136,9 @@ export default function AdminOrders() {
                   <Button variant="ghost" size="icon" onClick={() => setViewingOrder(order)}>
                     <Eye className="w-4 h-4" />
                   </Button>
+                  <Button variant="ghost" size="icon" onClick={() => setDeleteOrderId(order._id)} className="text-destructive hover:text-destructive">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -169,30 +199,68 @@ export default function AdminOrders() {
                         <span className="font-bold w-6">{item.qty}x</span>
                         <span>{item.name}</span>
                       </div>
-                      <span className="font-medium">${(item.price * item.qty).toFixed(2)}</span>
+                      <span className="font-medium">₹{(item.price * item.qty).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="flex justify-end border-t pt-4">
+              {/* Status History */}
+              {viewingOrder.statusHistory && viewingOrder.statusHistory.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Status History
+                  </h4>
+                  <div className="space-y-2">
+                    {viewingOrder.statusHistory.map((history: any, idx: number) => (
+                      <div key={idx} className="flex items-center gap-3 p-2 text-sm bg-muted/30 rounded">
+                        <Badge className={getStatusColor(history.status)}>{history.status}</Badge>
+                        <span className="text-muted-foreground">
+                          {new Date(history.timestamp).toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <Separator />
+
+              <div className="flex justify-end pt-2">
                 <div className="w-48 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>${(viewingOrder.totalAmount - (viewingOrder.deliveryCharge || 0)).toFixed(2)}</span>
+                    <span>₹{(viewingOrder.totalAmount - (viewingOrder.deliveryCharge || 0)).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Delivery</span>
-                    <span>${(viewingOrder.deliveryCharge || 0).toFixed(2)}</span>
+                    <span>₹{(viewingOrder.deliveryCharge || 0).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between font-bold text-lg pt-2 border-t">
                     <span>Total</span>
-                    <span>${viewingOrder.totalAmount.toFixed(2)}</span>
+                    <span>₹{viewingOrder.totalAmount.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Order Confirmation */}
+      <Dialog open={!!deleteOrderId} onOpenChange={(open) => !open && setDeleteOrderId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete Order</DialogTitle>
+            <DialogDescription>Are you sure you want to delete this order? This action cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2 justify-end pt-4">
+            <Button variant="secondary" onClick={() => setDeleteOrderId(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => deleteOrderId && handleDeleteOrder(deleteOrderId)} disabled={deleteOrderMutation.isPending}>
+              {deleteOrderMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete"}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
