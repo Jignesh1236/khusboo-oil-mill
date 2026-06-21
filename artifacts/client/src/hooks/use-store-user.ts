@@ -1,10 +1,22 @@
 import { useState } from 'react';
 
+export interface UserAddress {
+  fullName?: string;
+  phone?: string;
+  houseFlatBuilding?: string;
+  streetArea?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  country?: string;
+  landmark?: string;
+}
+
 export interface StoreUser {
   _id: string;
   name: string;
   ip: string;
-  address?: string;
+  address?: UserAddress;
   phone?: string;
 }
 

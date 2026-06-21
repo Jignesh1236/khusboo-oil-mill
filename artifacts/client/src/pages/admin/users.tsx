@@ -60,7 +60,19 @@ export default function AdminUsers() {
                 <TableCell className="font-medium">{user.name}</TableCell>
                 <TableCell>{user.phone || "-"}</TableCell>
                 <TableCell className="capitalize">{user.source || "Unknown"}</TableCell>
-                <TableCell className="max-w-[200px] truncate" title={user.address}>{user.address || "-"}</TableCell>
+                <TableCell className="max-w-[200px]">
+                  {user.address ? (
+                    typeof user.address === 'string' ? (
+                      <span className="truncate block" title={user.address}>{user.address}</span>
+                    ) : (
+                      <div className="text-xs">
+                        <div>{user.address.fullName}</div>
+                        <div className="truncate">{user.address.houseFlatBuilding}, {user.address.streetArea}</div>
+                        <div>{user.address.city}, {user.address.state} - {user.address.pincode}</div>
+                      </div>
+                    )
+                  ) : "-"}
+                </TableCell>
                 <TableCell className="font-mono text-xs">{user.ip}</TableCell>
                 <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                 <TableCell>
