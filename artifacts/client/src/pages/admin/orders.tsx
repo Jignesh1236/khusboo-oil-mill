@@ -82,13 +82,13 @@ export default function AdminOrders() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold">Orders</h1>
-        <div className="w-48">
+        <div className="w-full sm:w-48">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger><SelectValue placeholder="All Statuses" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="">All Statuses</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="confirmed">Confirmed</SelectItem>
               <SelectItem value="out for delivery">Out for Delivery</SelectItem>
@@ -99,7 +99,8 @@ export default function AdminOrders() {
         </div>
       </div>
 
-      <div className="border rounded-xl overflow-hidden bg-card">
+      {/* Desktop Table View */}
+      <div className="border rounded-xl overflow-hidden bg-card hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -150,6 +151,49 @@ export default function AdminOrders() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Mobile Card View */}
+      <div className="space-y-4 md:hidden">
+        {ordersPage?.orders.map((order) => (
+          <div key={order._id} className="border rounded-xl p-4 bg-card">
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <p className="font-mono text-xs text-muted-foreground">#{order._id.slice(-8).toUpperCase()}</p>
+                <p className="text-sm">{new Date(order.createdAt).toLocaleDateString()}</p>
+              </div>
+              <Badge variant="outline" className={getStatusColor(order.status)}>
+                {order.status}
+              </Badge>
+            </div>
+
+            <p className="font-medium">{order.userName || "Guest"}</p>
+            <p className="text-2xl font-bold mt-1">₹{order.totalAmount.toFixed(2)}</p>
+
+            <div className="mt-4 space-y-2">
+              <Select value={order.status} onValueChange={(val) => handleStatusChange(order._id, val)}>
+                <SelectTrigger className="text-sm">
+                  <SelectValue placeholder="Update Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="out for delivery">Out for Delivery</SelectItem>
+                  <SelectItem value="delivered">Delivered</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex gap-2 mt-4 justify-end">
+              <Button variant="ghost" size="sm" onClick={() => setViewingOrder(order)}><Eye className="w-4 h-4 mr-1" /> View</Button>
+              <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setDeleteOrderId(order._id)}><Trash2 className="w-4 h-4 mr-1" /> Delete</Button>
+            </div>
+          </div>
+        ))}
+        {(!ordersPage?.orders || ordersPage.orders.length === 0) && (
+          <div className="text-center py-10 text-muted-foreground border rounded-xl bg-card">No orders found.</div>
+        )}
+      </div>
       
       {ordersPage && ordersPage.pages > 1 && (
         <div className="flex justify-center gap-2">
@@ -168,7 +212,7 @@ export default function AdminOrders() {
           
           {viewingOrder && (
             <div className="space-y-6 pt-4">
-              <div className="grid grid-cols-2 gap-4 bg-muted/50 p-4 rounded-lg">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-muted/50 p-4 rounded-lg">
                 <div>
                   <h4 className="font-semibold text-sm mb-1">Customer Info</h4>
                   <p className="text-sm">{viewingOrder.address.fullName || viewingOrder.userName || "Guest"}</p>
@@ -249,7 +293,7 @@ export default function AdminOrders() {
               <Separator />
 
               <div className="flex justify-end pt-2">
-                <div className="w-48 space-y-2">
+                <div className="w-full sm:w-48 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
                     <span>₹{(viewingOrder.totalAmount - (viewingOrder.deliveryCharge || 0)).toFixed(2)}</span>

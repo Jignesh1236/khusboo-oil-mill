@@ -122,7 +122,7 @@ export default function AdminProducts() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h1 className="text-2xl font-bold">Products</h1>
         <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) resetForm(); }}>
           <DialogTrigger asChild>
@@ -133,7 +133,7 @@ export default function AdminProducts() {
               <DialogTitle>{editingId ? "Edit" : "Add"} Product</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-6 pt-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Name</label>
                   <Input value={formData.name} onChange={e => setFormData(p => ({...p, name: e.target.value}))} required />
@@ -150,7 +150,7 @@ export default function AdminProducts() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Price</label>
+                  <label className="text-sm font-medium">Price (₹)</label>
                   <Input type="number" step="0.01" value={formData.price} onChange={e => setFormData(p => ({...p, price: parseFloat(e.target.value)}))} required />
                 </div>
                 <div className="space-y-2">
@@ -181,7 +181,7 @@ export default function AdminProducts() {
                 />
               </div>
 
-              <div className="flex gap-6">
+              <div className="flex flex-wrap gap-6">
                 <div className="flex items-center space-x-2">
                   <Switch checked={formData.freeDelivery} onCheckedChange={c => setFormData(p => ({...p, freeDelivery: c}))} />
                   <label className="text-sm font-medium">Free Delivery</label>
@@ -200,7 +200,8 @@ export default function AdminProducts() {
         </Dialog>
       </div>
 
-      <div className="border rounded-xl overflow-hidden bg-card">
+      {/* Desktop Table View */}
+      <div className="border rounded-xl overflow-hidden bg-card hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -221,7 +222,7 @@ export default function AdminProducts() {
                   </div>
                 </TableCell>
                 <TableCell>{p.category}</TableCell>
-                <TableCell>${p.price.toFixed(2)}</TableCell>
+                <TableCell>₹{p.price.toFixed(2)}</TableCell>
                 <TableCell>{p.stock}</TableCell>
                 <TableCell className="text-right space-x-2">
                   <Button variant="ghost" size="icon" onClick={() => handleEdit(p)}><Edit className="w-4 h-4" /></Button>
@@ -236,6 +237,34 @@ export default function AdminProducts() {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="space-y-4 md:hidden">
+        {productsPage?.products.map((p) => (
+          <div key={p._id} className="border rounded-xl p-4 bg-card">
+            <div className="flex items-start gap-3">
+              <img 
+                src={p.images?.[0]?.replace('/upload/', '/upload/w_100,h_100,c_fill,q_auto/') || "https://via.placeholder.com/80"} 
+                alt="" 
+                className="w-20 h-20 rounded bg-muted object-cover shrink-0" 
+              />
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium line-clamp-2">{p.name}</h3>
+                <p className="text-sm text-muted-foreground">{p.category}</p>
+                <p className="font-semibold text-lg mt-1">₹{p.price.toFixed(2)}</p>
+                <p className="text-sm">Stock: {p.stock}</p>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4 justify-end">
+              <Button variant="ghost" size="sm" onClick={() => handleEdit(p)}><Edit className="w-4 h-4 mr-1" /> Edit</Button>
+              <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(p._id)}><Trash2 className="w-4 h-4 mr-1" /> Delete</Button>
+            </div>
+          </div>
+        ))}
+        {(!productsPage?.products || productsPage.products.length === 0) && (
+          <div className="text-center py-10 text-muted-foreground border rounded-xl bg-card">No products found.</div>
+        )}
       </div>
       
       {/* Basic pagination */}
