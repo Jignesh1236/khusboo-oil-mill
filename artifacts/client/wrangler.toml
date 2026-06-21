@@ -1,0 +1,7 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "khusboo-oil-mill"
+compatibility_date = "2024-12-13"
+
+[pages_build]
+command = "npm install && npm run build"
+build_output_dir = "dist"
