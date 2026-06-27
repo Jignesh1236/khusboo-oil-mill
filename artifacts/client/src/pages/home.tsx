@@ -1,7 +1,14 @@
 import { useListBanners, useListCategories, useListFeaturedProducts, useListProducts } from "@/lib/api-client-react";
 import { ProductCard } from "@/components/product-card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Link, useSearch } from "wouter";
+import {
+  Box,
+  Typography,
+  Chip,
+  Skeleton,
+  Grid,
+  Stack,
+} from "@mui/material";
 
 export default function Home() {
   const searchString = useSearch();
@@ -21,93 +28,136 @@ export default function Home() {
   const isFiltered = !!searchQuery || !!categoryFilter;
 
   return (
-    <div className="space-y-10 pb-10">
-      {/* Banners — hide when searching */}
+    <Box sx={{ pb: 5 }}>
       {!isFiltered && (
-        <section>
+        <Box sx={{ mb: 4 }}>
           {loadingBanners ? (
-            <Skeleton className="w-full aspect-[21/9] rounded-xl" />
+            <Skeleton variant="rounded" sx={{ width: "100%", aspectRatio: "21/9" }} />
           ) : banners?.length ? (
-            <div className="w-full aspect-[21/9] rounded-xl bg-muted overflow-hidden relative">
-              <img src={banners[0].imageUrl || ""} alt={banners[0].title} className="w-full h-full object-cover" />
-            </div>
+            <Box
+              sx={{
+                width: "100%",
+                aspectRatio: "21/9",
+                borderRadius: 3,
+                overflow: "hidden",
+                bgcolor: "action.hover",
+              }}
+            >
+              <Box
+                component="img"
+                src={banners[0].imageUrl || ""}
+                alt={banners[0].title}
+                sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            </Box>
           ) : null}
-        </section>
+        </Box>
       )}
 
-      {/* Categories */}
       {!searchQuery && (
-        <section>
-          <h2 className="text-xl font-bold mb-4">Categories</h2>
-          <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide">
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" fontWeight={700} gutterBottom>
+            Categories
+          </Typography>
+          <Stack direction="row" spacing={1} sx={{ overflowX: "auto", pb: 1 }} className="scrollbar-hide">
             {loadingCategories ? (
-              Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-10 w-24 rounded-full shrink-0" />)
+              Array(5)
+                .fill(0)
+                .map((_, i) => <Skeleton key={i} variant="rounded" width={90} height={36} sx={{ borderRadius: 99, flexShrink: 0 }} />)
             ) : (
               <>
-                <Link
+                <Chip
+                  component={Link}
                   href="/"
-                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                    !categoryFilter ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                  }`}
-                >
-                  All
-                </Link>
-                {categories?.map(c => (
-                  <Link
+                  label="All"
+                  clickable
+                  color={!categoryFilter ? "primary" : "default"}
+                  sx={{ flexShrink: 0 }}
+                />
+                {categories?.map((c) => (
+                  <Chip
                     key={c._id}
+                    component={Link}
                     href={`/?category=${encodeURIComponent(c.name)}`}
-                    className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                      categoryFilter === c.name ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                    }`}
-                  >
-                    {c.name}
-                  </Link>
+                    label={c.name}
+                    clickable
+                    color={categoryFilter === c.name ? "primary" : "default"}
+                    sx={{ flexShrink: 0 }}
+                  />
                 ))}
               </>
             )}
-          </div>
-        </section>
+          </Stack>
+        </Box>
       )}
 
-      {/* Featured Products — hide when filtering */}
       {!isFiltered && (
-        <section>
-          <h2 className="text-xl font-bold mb-4">Featured</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {loadingFeatured ? (
-              Array(4).fill(0).map((_, i) => <Skeleton key={i} className="aspect-[3/4] rounded-xl" />)
-            ) : (
-              featuredProducts?.map(p => <ProductCard key={p._id} product={p} />)
-            )}
-          </div>
-        </section>
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" fontWeight={700} gutterBottom>
+            Featured
+          </Typography>
+          <Grid container spacing={2}>
+            {loadingFeatured
+              ? Array(4)
+                  .fill(0)
+                  .map((_, i) => (
+                    <Grid key={i} size={{ xs: 6, sm: 4, md: 3 }}>
+                      <Skeleton variant="rounded" sx={{ aspectRatio: "3/4" }} />
+                    </Grid>
+                  ))
+              : featuredProducts?.map((p) => (
+                  <Grid key={p._id} size={{ xs: 6, sm: 4, md: 3 }}>
+                    <ProductCard product={p} />
+                  </Grid>
+                ))}
+          </Grid>
+        </Box>
       )}
 
-      {/* Products */}
-      <section>
-        <h2 className="text-xl font-bold mb-4">
+      <Box>
+        <Typography variant="h6" fontWeight={700} gutterBottom>
           {searchQuery
             ? `Results for "${searchQuery}"`
             : categoryFilter
             ? categoryFilter
             : "All Products"}
-        </h2>
+        </Typography>
         {loadingProducts ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {Array(8).fill(0).map((_, i) => <Skeleton key={i} className="aspect-[3/4] rounded-xl" />)}
-          </div>
+          <Grid container spacing={2}>
+            {Array(8)
+              .fill(0)
+              .map((_, i) => (
+                <Grid key={i} size={{ xs: 6, sm: 4, md: 3 }}>
+                  <Skeleton variant="rounded" sx={{ aspectRatio: "3/4" }} />
+                </Grid>
+              ))}
+          </Grid>
         ) : productsPage?.products.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <p className="text-lg font-medium">No products found</p>
-            <p className="text-sm mt-1">Try a different search term or category</p>
-            <Link href="/" className="mt-4 inline-block text-primary underline text-sm">Browse all products</Link>
-          </div>
+          <Box sx={{ textAlign: "center", py: 10 }}>
+            <Typography color="text.secondary" variant="h6" gutterBottom>
+              No products found
+            </Typography>
+            <Typography color="text.secondary" variant="body2" gutterBottom>
+              Try a different search term or category
+            </Typography>
+            <Box
+              component={Link}
+              href="/"
+              sx={{ color: "primary.main", textDecoration: "underline", fontSize: "0.875rem", display: "inline-block", mt: 1 }}
+            >
+              Browse all products
+            </Box>
+          </Box>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {productsPage?.products.map(p => <ProductCard key={p._id} product={p} />)}
-          </div>
+          <Grid container spacing={2}>
+            {productsPage?.products.map((p) => (
+              <Grid key={p._id} size={{ xs: 6, sm: 4, md: 3 }}>
+                <ProductCard product={p} />
+              </Grid>
+            ))}
+          </Grid>
         )}
-      </section>
-    </div>
+      </Box>
+    </Box>
   );
 }

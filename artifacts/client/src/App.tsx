@@ -1,13 +1,13 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { StoreLayout, AdminLayout } from "@/components/layout";
 import { IPGuard, AdminGuard } from "@/components/guards";
 import { setAuthTokenGetter, setBaseUrl } from "@/lib/api-client-react";
+import { useState, useEffect } from "react";
+import { Snackbar, Alert } from "@mui/material";
+import { _subscribeToast } from "@/hooks/use-toast";
 
-// Set base URL to Render backend
 setBaseUrl("https://e-commerce-7ktz.onrender.com");
 
 import NotFound from "@/pages/not-found";
@@ -32,15 +32,57 @@ import AdminUsers from "@/pages/admin/users";
 import AdminConfig from "@/pages/admin/config";
 import AdminReviews from "@/pages/admin/reviews";
 
-// Register JWT token getter — runs before every API request
 setAuthTokenGetter(() => localStorage.getItem("adminToken"));
 
 const queryClient = new QueryClient();
 
+type ToastState = {
+  open: boolean;
+  title?: string;
+  description?: string;
+  severity: "success" | "error" | "info";
+};
+
+function GlobalSnackbar() {
+  const [state, setState] = useState<ToastState>({
+    open: false,
+    severity: "success",
+  });
+
+  useEffect(() => {
+    return _subscribeToast((msg) => {
+      setState({
+        open: true,
+        title: msg.title,
+        description: msg.description,
+        severity: msg.variant === "destructive" ? "error" : "success",
+      });
+    });
+  }, []);
+
+  return (
+    <Snackbar
+      open={state.open}
+      autoHideDuration={3500}
+      onClose={() => setState((s) => ({ ...s, open: false }))}
+      anchorOrigin={{ vertical: "top", horizontal: "right" }}
+    >
+      <Alert
+        onClose={() => setState((s) => ({ ...s, open: false }))}
+        severity={state.severity}
+        variant="filled"
+        sx={{ minWidth: 240 }}
+      >
+        {state.title && <strong>{state.title}</strong>}
+        {state.description && <div style={{ fontSize: "0.85em" }}>{state.description}</div>}
+      </Alert>
+    </Snackbar>
+  );
+}
+
 function Router() {
   return (
     <Switch>
-      {/* Admin Routes */}
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/*">
         <AdminGuard>
@@ -60,7 +102,6 @@ function Router() {
         </AdminGuard>
       </Route>
 
-      {/* Store Routes */}
       <Route path="/onboarding" component={Onboarding} />
       <Route path="*">
         <IPGuard>
@@ -86,14 +127,12 @@ function Router() {
 
 function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          <Router />
+        </WouterRouter>
+        <GlobalSnackbar />
       </QueryClientProvider>
     </ThemeProvider>
   );

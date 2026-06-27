@@ -1,53 +1,81 @@
 import { useParams } from "wouter";
 import { useState } from "react";
 import { useCurrency } from "@/hooks/use-currency";
-import { 
-  useGetProduct, 
-  useListProducts, 
+import {
+  useGetProduct,
+  useListProducts,
   useGetProductReviews,
   useCreateReview,
   useGetWishlist,
   useAddToWishlist,
   useRemoveFromWishlist,
   getGetProductReviewsQueryKey,
-  getGetWishlistQueryKey
+  getGetWishlistQueryKey,
 } from "@/lib/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCart } from "@/hooks/use-cart";
 import { useStoreUser } from "@/hooks/use-store-user";
 import { ProductCard } from "@/components/product-card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
-import { Heart, Minus, Plus, ShoppingCart, Star, StarHalf } from "lucide-react";
+import {
+  Box,
+  Button,
+  Chip,
+  Typography,
+  Grid,
+  Skeleton,
+  Divider,
+  Paper,
+  IconButton,
+  TextField,
+  Stack,
+} from "@mui/material";
+import {
+  Favorite,
+  FavoriteBorder,
+  Remove,
+  Add,
+  ShoppingCart,
+  Star as StarIcon,
+  StarBorder,
+} from "@mui/icons-material";
 import { toast } from "@/hooks/use-toast";
+
+function RatingDisplay({ rating, size = 16 }: { rating: number; size?: number }) {
+  return (
+    <Box sx={{ display: "flex" }}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <StarIcon
+          key={star}
+          sx={{ fontSize: size, color: star <= Math.round(rating) ? "primary.main" : "action.disabled" }}
+        />
+      ))}
+    </Box>
+  );
+}
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
   const { user } = useStoreUser();
   const { addItem } = useCart();
-  
   const { format } = useCurrency();
   const [qty, setQty] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const [reviewRating, setReviewRating] = useState(5);
+  const [reviewHover, setReviewHover] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
 
   const { data: product, isLoading } = useGetProduct(id || "");
   const { data: relatedProducts } = useListProducts(
-    { category: product?.category, limit: 4 },
+    { category: product?.category, limit: 5 },
     { query: { enabled: !!product?.category, queryKey: ["products", "related", product?.category] } }
   );
   const { data: reviews } = useGetProductReviews(id || "");
-
   const { data: wishlist } = useGetWishlist(user?._id || "", {
-    query: { enabled: !!user?._id, queryKey: ["wishlist", user?._id] }
+    query: { enabled: !!user?._id, queryKey: ["wishlist", user?._id] },
   });
 
-  const isWishlisted = wishlist?.some(w => w._id === id);
-  
+  const isWishlisted = wishlist?.some((w) => w._id === id);
   const addToWishlistMutation = useAddToWishlist();
   const removeFromWishlistMutation = useRemoveFromWishlist();
   const createReviewMutation = useCreateReview();
@@ -60,9 +88,9 @@ export default function ProductDetail() {
       price: product.price,
       qty,
       image: product.images?.[0],
-      discountPercent: product.discountPercent || undefined
+      discountPercent: product.discountPercent || undefined,
     });
-    toast({ title: "Added to cart", description: `${qty}x ${product.name} added to your cart.` });
+    toast({ title: "Added to cart", description: `${qty}x ${product.name} added.` });
   };
 
   const toggleWishlist = () => {
@@ -74,7 +102,7 @@ export default function ProductDetail() {
           onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: getGetWishlistQueryKey(user._id) });
             toast({ title: "Removed from wishlist" });
-          }
+          },
         }
       );
     } else {
@@ -84,7 +112,7 @@ export default function ProductDetail() {
           onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: getGetWishlistQueryKey(user._id) });
             toast({ title: "Added to wishlist" });
-          }
+          },
         }
       );
     }
@@ -98,209 +126,336 @@ export default function ProductDetail() {
         data: {
           userId: user._id,
           productId: product._id,
-          orderId: "guest", // Placeholder as per simple logic
+          orderId: "guest",
           rating: reviewRating,
-          comment: reviewComment
-        }
+          comment: reviewComment,
+        },
       },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetProductReviewsQueryKey(product._id) });
           setReviewComment("");
           toast({ title: "Review submitted", description: "Thank you for your feedback!" });
-        }
+        },
       }
     );
   };
 
-  if (isLoading) return <div className="p-4"><Skeleton className="h-96 w-full" /></div>;
-  if (!product) return <div className="p-4 text-center">Product not found</div>;
+  if (isLoading) {
+    return (
+      <Box sx={{ pb: 10 }}>
+        <Grid container spacing={4}>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Skeleton variant="rounded" sx={{ aspectRatio: "1/1" }} />
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <Skeleton variant="text" width="60%" height={32} />
+            <Skeleton variant="text" width="80%" height={48} sx={{ mt: 1 }} />
+            <Skeleton variant="text" width="40%" height={40} sx={{ mt: 2 }} />
+            <Skeleton variant="rounded" height={120} sx={{ mt: 3 }} />
+          </Grid>
+        </Grid>
+      </Box>
+    );
+  }
 
-  const discountedPrice = product.discountPercent 
-    ? product.price - (product.price * product.discountPercent / 100)
+  if (!product) {
+    return (
+      <Box sx={{ textAlign: "center", py: 10 }}>
+        <Typography variant="h6" color="text.secondary">
+          Product not found
+        </Typography>
+      </Box>
+    );
+  }
+
+  const discountedPrice = product.discountPercent
+    ? product.price - (product.price * product.discountPercent) / 100
     : product.price;
-
-  const images = product.images?.length ? product.images : ["https://via.placeholder.com/800x800?text=No+Image"];
+  const images = product.images?.length
+    ? product.images
+    : ["https://via.placeholder.com/800x800?text=No+Image"];
 
   return (
-    <div className="pb-24 lg:pb-10 space-y-12">
-      {/* Product Details */}
-      <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
-        <div className="space-y-4">
-          <div className="aspect-square bg-muted rounded-2xl overflow-hidden border">
-            <img 
-              src={images[activeImage].replace('/upload/', '/upload/w_800,q_auto,f_auto/')} 
-              alt={product.name} 
-              className="w-full h-full object-cover" 
+    <Box sx={{ pb: { xs: 10, md: 4 } }}>
+      <Grid container spacing={{ xs: 3, md: 6 }} sx={{ mb: 6 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Box
+            sx={{
+              aspectRatio: "1/1",
+              borderRadius: 3,
+              overflow: "hidden",
+              border: "1px solid",
+              borderColor: "divider",
+              bgcolor: "action.hover",
+            }}
+          >
+            <Box
+              component="img"
+              src={images[activeImage].replace("/upload/", "/upload/w_800,q_auto,f_auto/")}
+              alt={product.name}
+              sx={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
-          </div>
+          </Box>
           {images.length > 1 && (
-            <div className="flex gap-2 overflow-x-auto pb-2">
+            <Stack direction="row" spacing={1} sx={{ mt: 1.5, overflowX: "auto", pb: 1 }} className="scrollbar-hide">
               {images.map((img, i) => (
-                <button 
-                  key={i} 
+                <Box
+                  key={i}
+                  component="button"
                   onClick={() => setActiveImage(i)}
-                  className={`shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 ${activeImage === i ? 'border-primary' : 'border-transparent'}`}
+                  sx={{
+                    flexShrink: 0,
+                    width: 72,
+                    height: 72,
+                    borderRadius: 2,
+                    overflow: "hidden",
+                    border: "2px solid",
+                    borderColor: activeImage === i ? "primary.main" : "transparent",
+                    cursor: "pointer",
+                    bgcolor: "action.hover",
+                    p: 0,
+                  }}
                 >
-                  <img src={img.replace('/upload/', '/upload/w_200,h_200,c_fill,q_auto,f_auto/')} alt="" className="w-full h-full object-cover" />
-                </button>
+                  <Box
+                    component="img"
+                    src={img.replace("/upload/", "/upload/w_200,h_200,c_fill,q_auto,f_auto/")}
+                    alt=""
+                    sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </Box>
               ))}
-            </div>
+            </Stack>
           )}
-        </div>
+        </Grid>
 
-        <div className="flex flex-col">
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-medium text-muted-foreground">{product.category}</span>
-            <div className="flex items-center gap-1">
-              <Star className="w-4 h-4 fill-primary text-primary" />
-              <span className="text-sm font-bold">{product.avgRating?.toFixed(1) || "0.0"}</span>
-              <span className="text-sm text-muted-foreground">({product.reviewCount || 0})</span>
-            </div>
-          </div>
-          
-          <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
-          
-          <div className="flex items-center gap-4 mb-6">
-            <span className="text-3xl font-bold">{format(discountedPrice)}</span>
-            {product.discountPercent && (
+        <Grid size={{ xs: 12, md: 6 }} sx={{ display: "flex", flexDirection: "column" }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+            <Typography variant="body2" color="text.secondary" fontWeight={500}>
+              {product.category}
+            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <StarIcon sx={{ fontSize: 16, color: "primary.main" }} />
+              <Typography variant="body2" fontWeight={700}>
+                {product.avgRating?.toFixed(1) || "0.0"}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                ({product.reviewCount || 0})
+              </Typography>
+            </Box>
+          </Box>
+
+          <Typography variant="h4" fontWeight={700} sx={{ mb: 2 }}>
+            {product.name}
+          </Typography>
+
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+            <Typography variant="h4" fontWeight={700}>
+              {format(discountedPrice)}
+            </Typography>
+            {product.discountPercent ? (
               <>
-                <span className="text-xl text-muted-foreground line-through">{format(product.price)}</span>
-                <Badge variant="destructive" className="text-sm px-2 py-1">{product.discountPercent}% OFF</Badge>
+                <Typography
+                  variant="h6"
+                  color="text.secondary"
+                  sx={{ textDecoration: "line-through" }}
+                >
+                  {format(product.price)}
+                </Typography>
+                <Chip
+                  label={`${product.discountPercent}% OFF`}
+                  color="error"
+                  size="small"
+                  sx={{ fontWeight: 700 }}
+                />
               </>
-            )}
-          </div>
+            ) : null}
+          </Box>
 
-          <div className="prose prose-sm dark:prose-invert mb-8 max-w-none">
-            <p>{product.description || "No description available."}</p>
-          </div>
+          {product.description && (
+            <Typography variant="body1" color="text.secondary" sx={{ lineHeight: 1.8, mb: 3 }}>
+              {product.description}
+            </Typography>
+          )}
 
-          <div className="space-y-4 mb-8">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Status:</span>
-              {product.stock > 0 ? (
-                <Badge variant="outline" className="bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-200">In Stock ({product.stock})</Badge>
-              ) : (
-                <Badge variant="destructive">Out of Stock</Badge>
-              )}
-            </div>
-            {product.deliveryTime && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">Delivery:</span> {product.deliveryTime}
-              </div>
+          <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 3, gap: 1 }}>
+            {product.stock > 0 ? (
+              <Chip
+                label={`In Stock (${product.stock})`}
+                color="success"
+                variant="outlined"
+                size="small"
+              />
+            ) : (
+              <Chip label="Out of Stock" color="error" size="small" />
             )}
             {product.freeDelivery && (
-              <Badge className="bg-primary/10 text-primary hover:bg-primary/20 w-fit">Free Delivery Eligible</Badge>
+              <Chip label="Free Delivery" color="primary" variant="outlined" size="small" />
             )}
-          </div>
-
-          <div className="mt-auto space-y-4 border-t pt-6">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center bg-secondary rounded-full p-1 border">
-                <button 
-                  onClick={() => setQty(Math.max(1, qty - 1))}
-                  className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-background transition-colors"
-                >
-                  <Minus className="h-4 w-4" />
-                </button>
-                <span className="w-8 text-center font-medium">{qty}</span>
-                <button 
-                  onClick={() => setQty(qty + 1)}
-                  className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-background transition-colors"
-                  disabled={qty >= product.stock}
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
-              <Button 
-                className="flex-1 rounded-full h-12 text-base font-bold" 
-                onClick={handleAddToCart}
-                disabled={product.stock === 0}
-              >
-                <ShoppingCart className="w-5 h-5 mr-2" />
-                Add to Cart
-              </Button>
-              <Button 
-                variant="outline" 
-                size="icon" 
-                className={`h-12 w-12 rounded-full shrink-0 ${isWishlisted ? 'border-primary bg-primary/5' : ''}`}
-                onClick={toggleWishlist}
-              >
-                <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-primary text-primary' : ''}`} />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Reviews */}
-      <div className="pt-8 border-t">
-        <h2 className="text-2xl font-bold mb-6">Customer Reviews</h2>
-        
-        <div className="grid md:grid-cols-2 gap-12">
-          <div className="space-y-6">
-            {reviews?.length ? (
-              reviews.map(review => (
-                <div key={review._id} className="border rounded-xl p-4 bg-card">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold">{review.userName || "Anonymous"}</span>
-                    <div className="flex">
-                      {[1,2,3,4,5].map(star => (
-                        <Star key={star} className={`w-3 h-3 ${star <= review.rating ? 'fill-primary text-primary' : 'text-muted'}`} />
-                      ))}
-                    </div>
-                  </div>
-                  <span className="text-xs text-muted-foreground block mb-2">{new Date(review.createdAt).toLocaleDateString()}</span>
-                  <p className="text-sm">{review.comment}</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-muted-foreground">No reviews yet. Be the first to review!</p>
+            {product.deliveryTime && (
+              <Chip label={`Delivery: ${product.deliveryTime}`} variant="outlined" size="small" />
             )}
-          </div>
+          </Stack>
 
-          <div className="bg-muted/30 p-6 rounded-2xl h-fit border">
-            <h3 className="font-bold text-lg mb-4">Write a Review</h3>
-            <form onSubmit={submitReview} className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Rating</label>
-                <div className="flex gap-1">
-                  {[1,2,3,4,5].map(star => (
-                    <button type="button" key={star} onClick={() => setReviewRating(star)}>
-                      <Star className={`w-6 h-6 ${star <= reviewRating ? 'fill-primary text-primary' : 'text-muted hover:text-primary/50'}`} />
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Review</label>
-                <Textarea 
-                  value={reviewComment}
-                  onChange={(e) => setReviewComment(e.target.value)}
-                  placeholder="What did you like about this product?"
-                  rows={4}
-                  required
-                />
-              </div>
-              <Button type="submit" disabled={createReviewMutation.isPending} className="w-full">
-                {createReviewMutation.isPending ? "Submitting..." : "Submit Review"}
-              </Button>
-            </form>
-          </div>
-        </div>
-      </div>
+          <Divider sx={{ mb: 3 }} />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                bgcolor: "action.hover",
+                borderRadius: 99,
+                px: 1.5,
+                py: 0.5,
+              }}
+            >
+              <IconButton
+                size="small"
+                onClick={() => setQty(Math.max(1, qty - 1))}
+              >
+                <Remove fontSize="small" />
+              </IconButton>
+              <Typography fontWeight={700} sx={{ minWidth: 24, textAlign: "center" }}>
+                {qty}
+              </Typography>
+              <IconButton
+                size="small"
+                onClick={() => setQty(qty + 1)}
+                disabled={qty >= product.stock}
+              >
+                <Add fontSize="small" />
+              </IconButton>
+            </Box>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={handleAddToCart}
+              disabled={product.stock === 0}
+              startIcon={<ShoppingCart />}
+              sx={{ flex: 1, borderRadius: 99, py: 1.5, fontWeight: 700, fontSize: "1rem" }}
+            >
+              {product.stock === 0 ? "Out of Stock" : "Add to Cart"}
+            </Button>
+            <IconButton
+              onClick={toggleWishlist}
+              sx={{
+                width: 48,
+                height: 48,
+                border: "1px solid",
+                borderColor: isWishlisted ? "primary.main" : "divider",
+                bgcolor: isWishlisted ? "primary.light" : "transparent",
+                color: isWishlisted ? "white" : "text.secondary",
+                "&:hover": { bgcolor: isWishlisted ? "primary.main" : "action.hover" },
+              }}
+            >
+              {isWishlisted ? <Favorite /> : <FavoriteBorder />}
+            </IconButton>
+          </Box>
+        </Grid>
+      </Grid>
 
-      {/* Related Products */}
-      {relatedProducts && relatedProducts.products.length > 0 && (
-        <div className="pt-8 border-t">
-          <h2 className="text-2xl font-bold mb-6">You Might Also Like</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {relatedProducts.products.filter(p => p._id !== product._id).slice(0, 4).map(p => (
-              <ProductCard key={p._id} product={p} />
-            ))}
-          </div>
-        </div>
+      <Divider sx={{ mb: 6 }} />
+      <Typography variant="h5" fontWeight={700} sx={{ mb: 4 }}>
+        Customer Reviews
+      </Typography>
+
+      <Grid container spacing={4} sx={{ mb: 6 }}>
+        <Grid size={{ xs: 12, md: 7 }}>
+          {reviews?.length ? (
+            <Stack spacing={2}>
+              {reviews.map((review) => (
+                <Paper key={review._id} variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 1 }}>
+                    <Typography fontWeight={700}>{review.userName || "Anonymous"}</Typography>
+                    <RatingDisplay rating={review.rating} size={14} />
+                  </Box>
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
+                    {new Date(review.createdAt).toLocaleDateString()}
+                  </Typography>
+                  <Typography variant="body2">{review.comment}</Typography>
+                </Paper>
+              ))}
+            </Stack>
+          ) : (
+            <Typography color="text.secondary">No reviews yet. Be the first to review!</Typography>
+          )}
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 5 }}>
+          <Paper
+            variant="outlined"
+            sx={{ p: 3, borderRadius: 3, bgcolor: "action.hover" }}
+            component="form"
+            onSubmit={submitReview}
+          >
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              Write a Review
+            </Typography>
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" fontWeight={500} gutterBottom>
+                Rating
+              </Typography>
+              <Box sx={{ display: "flex", gap: 0.5 }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <IconButton
+                    key={star}
+                    type="button"
+                    size="small"
+                    onMouseEnter={() => setReviewHover(star)}
+                    onMouseLeave={() => setReviewHover(0)}
+                    onClick={() => setReviewRating(star)}
+                    sx={{ p: 0.25 }}
+                  >
+                    {star <= (reviewHover || reviewRating) ? (
+                      <StarIcon sx={{ color: "primary.main", fontSize: 28 }} />
+                    ) : (
+                      <StarBorder sx={{ color: "action.active", fontSize: 28 }} />
+                    )}
+                  </IconButton>
+                ))}
+              </Box>
+            </Box>
+            <TextField
+              multiline
+              rows={4}
+              fullWidth
+              placeholder="What did you like about this product?"
+              value={reviewComment}
+              onChange={(e) => setReviewComment(e.target.value)}
+              required
+              sx={{ mb: 2, "& .MuiInputBase-root": { bgcolor: "background.paper" } }}
+            />
+            <Button
+              type="submit"
+              variant="contained"
+              fullWidth
+              disabled={createReviewMutation.isPending}
+            >
+              {createReviewMutation.isPending ? "Submitting..." : "Submit Review"}
+            </Button>
+          </Paper>
+        </Grid>
+      </Grid>
+
+      {relatedProducts && relatedProducts.products.filter((p) => p._id !== product._id).length > 0 && (
+        <>
+          <Divider sx={{ mb: 4 }} />
+          <Typography variant="h5" fontWeight={700} gutterBottom>
+            You Might Also Like
+          </Typography>
+          <Grid container spacing={2}>
+            {relatedProducts.products
+              .filter((p) => p._id !== product._id)
+              .slice(0, 4)
+              .map((p) => (
+                <Grid key={p._id} size={{ xs: 6, sm: 4, md: 3 }}>
+                  <ProductCard product={p} />
+                </Grid>
+              ))}
+          </Grid>
+        </>
       )}
-    </div>
+    </Box>
   );
 }

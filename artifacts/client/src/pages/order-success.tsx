@@ -2,8 +2,8 @@ import { useEffect } from "react";
 import { Link } from "wouter";
 import { useGetConfig } from "@/lib/api-client-react";
 import { useCart } from "@/hooks/use-cart";
-import { Button } from "@/components/ui/button";
-import { CheckCircle } from "lucide-react";
+import { Box, Typography, Button, Paper, Stack } from "@mui/material";
+import { CheckCircle, WhatsApp } from "@mui/icons-material";
 
 export default function OrderSuccess() {
   const { data: config } = useGetConfig();
@@ -14,37 +14,80 @@ export default function OrderSuccess() {
   }, [clearCart]);
 
   return (
-    <div className="min-h-[70vh] flex flex-col items-center justify-center p-4 text-center">
-      <div className="h-24 w-24 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-8">
-        <CheckCircle className="h-12 w-12 text-green-600 dark:text-green-400" />
-      </div>
-      
-      <h1 className="text-3xl font-bold mb-4">Order Redirected to WhatsApp!</h1>
-      <p className="text-muted-foreground max-w-md mx-auto mb-8 text-lg">
-        Thank you for shopping with us. Your order details have been populated in WhatsApp to complete the checkout process directly with our team.
-      </p>
+    <Box
+      sx={{
+        minHeight: "70vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        p: 3,
+        textAlign: "center",
+      }}
+    >
+      <Paper
+        elevation={0}
+        sx={{
+          p: 4,
+          borderRadius: 4,
+          maxWidth: 500,
+          width: "100%",
+          border: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        <Box
+          sx={{
+            width: 96,
+            height: 96,
+            borderRadius: "50%",
+            bgcolor: "success.light",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            mx: "auto",
+            mb: 3,
+          }}
+        >
+          <CheckCircle sx={{ fontSize: 52, color: "success.dark" }} />
+        </Box>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Link href="/">
-          <Button variant="outline" size="lg" className="w-full sm:w-auto">
+        <Typography variant="h4" fontWeight={700} gutterBottom>
+          Order Redirected to WhatsApp!
+        </Typography>
+        <Typography color="text.secondary" sx={{ mb: 4, lineHeight: 1.7 }}>
+          Thank you for shopping with us. Your order details have been populated in WhatsApp to
+          complete the checkout process directly with our team.
+        </Typography>
+
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
+          <Button component={Link} href="/" variant="outlined" size="large">
             Continue Shopping
           </Button>
-        </Link>
-        <Link href="/orders">
-          <Button size="lg" className="w-full sm:w-auto">
+          <Button component={Link} href="/orders" variant="contained" size="large">
             View My Orders
           </Button>
-        </Link>
-      </div>
+        </Stack>
 
-      {config?.whatsappNumber && (
-        <div className="mt-12 text-sm text-muted-foreground">
-          <p>Didn't open WhatsApp?</p>
-          <a href={`https://wa.me/${config.whatsappNumber}`} target="_blank" rel="noreferrer" className="text-primary hover:underline font-medium mt-1 inline-block">
-            Click here to open chat
-          </a>
-        </div>
-      )}
-    </div>
+        {config?.whatsappNumber && (
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Didn't open WhatsApp?
+            </Typography>
+            <Button
+              component="a"
+              href={`https://wa.me/${config.whatsappNumber}`}
+              target="_blank"
+              rel="noreferrer"
+              startIcon={<WhatsApp />}
+              color="success"
+              variant="text"
+            >
+              Click here to open chat
+            </Button>
+          </Box>
+        )}
+      </Paper>
+    </Box>
   );
 }

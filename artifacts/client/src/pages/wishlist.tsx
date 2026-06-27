@@ -1,48 +1,60 @@
 import { useGetWishlist } from "@/lib/api-client-react";
 import { useStoreUser } from "@/hooks/use-store-user";
 import { ProductCard } from "@/components/product-card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Heart } from "lucide-react";
+import { Box, Typography, Grid, Skeleton } from "@mui/material";
+import { Favorite } from "@mui/icons-material";
 
 export default function Wishlist() {
   const { user } = useStoreUser();
   const { data: wishlistData, isLoading } = useGetWishlist(user?._id || "", {
-    query: { enabled: !!user?._id, queryKey: ["wishlist", user?._id] }
+    query: { enabled: !!user?._id, queryKey: ["wishlist", user?._id] },
   });
 
   if (isLoading) {
     return (
-      <div className="space-y-6 pb-20">
-        <Skeleton className="h-8 w-48" />
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="aspect-[3/4] rounded-xl" />)}
-        </div>
-      </div>
+      <Box sx={{ pb: 10 }}>
+        <Skeleton variant="text" width={180} height={40} sx={{ mb: 2 }} />
+        <Grid container spacing={2}>
+          {[1, 2, 3, 4].map((i) => (
+            <Grid key={i} size={{ xs: 6, sm: 4, md: 3 }}>
+              <Skeleton variant="rounded" sx={{ aspectRatio: "3/4" }} />
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
     );
   }
 
   const products = wishlistData || [];
 
   return (
-    <div className="pb-24 lg:pb-10">
-      <div className="flex items-center gap-3 mb-6">
-        <Heart className="h-6 w-6 text-primary fill-primary" />
-        <h1 className="text-2xl font-bold">My Wishlist</h1>
-      </div>
+    <Box sx={{ pb: { xs: 10, md: 4 } }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3 }}>
+        <Favorite color="primary" />
+        <Typography variant="h5" fontWeight={700}>
+          My Wishlist
+        </Typography>
+      </Box>
 
       {products.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <Heart className="h-16 w-16 text-muted-foreground opacity-20 mb-4" />
-          <h2 className="text-xl font-medium mb-2">Your wishlist is empty</h2>
-          <p className="text-muted-foreground">Save items you love to review them later.</p>
-        </div>
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 10, textAlign: "center" }}>
+          <Favorite sx={{ fontSize: 64, color: "text.disabled", mb: 2 }} />
+          <Typography variant="h6" gutterBottom>
+            Your wishlist is empty
+          </Typography>
+          <Typography color="text.secondary" variant="body2">
+            Save items you love to review them later.
+          </Typography>
+        </Box>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {products.map(product => (
-            <ProductCard key={product._id} product={product} />
+        <Grid container spacing={2}>
+          {products.map((product) => (
+            <Grid key={product._id} size={{ xs: 6, sm: 4, md: 3 }}>
+              <ProductCard product={product} />
+            </Grid>
           ))}
-        </div>
+        </Grid>
       )}
-    </div>
+    </Box>
   );
 }

@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { useUploadImage } from "@/lib/api-client-react";
-import { Button } from "@/components/ui/button";
-import { Image as ImageIcon, Loader2, Upload, X } from "lucide-react";
+import {
+  Box,
+  Button,
+  Typography,
+  CircularProgress,
+  IconButton,
+} from "@mui/material";
+import { CloudUpload, Close, Image as ImageIcon } from "@mui/icons-material";
 import { toast } from "@/hooks/use-toast";
 
 interface ImageUploaderProps {
@@ -26,7 +32,7 @@ export function ImageUploader({ value, onChange, folder = "store" }: ImageUpload
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64Data = reader.result as string;
-      setPreview(base64Data); // temporary preview
+      setPreview(base64Data);
 
       uploadMutation.mutate(
         { data: { imageData: base64Data, folder } },
@@ -39,9 +45,9 @@ export function ImageUploader({ value, onChange, folder = "store" }: ImageUpload
             }
           },
           onError: () => {
-            setPreview(value || null); // revert on error
+            setPreview(value || null);
             toast({ title: "Error", description: "Failed to upload image", variant: "destructive" });
-          }
+          },
         }
       );
     };
@@ -49,52 +55,105 @@ export function ImageUploader({ value, onChange, folder = "store" }: ImageUpload
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-4">
+    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+      <Box
+        sx={{
+          width: 96,
+          height: 96,
+          borderRadius: 2,
+          overflow: "hidden",
+          border: "1px dashed",
+          borderColor: "divider",
+          bgcolor: "action.hover",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+          position: "relative",
+        }}
+      >
         {preview ? (
-          <div className="relative h-24 w-24 rounded-lg overflow-hidden border bg-muted">
-            <img src={preview} alt="Preview" className="h-full w-full object-cover" />
-            <button
-              type="button"
-              className="absolute top-1 right-1 bg-background/80 p-1 rounded-full text-foreground hover:bg-destructive hover:text-destructive-foreground transition-colors"
-              onClick={() => { setPreview(null); onChange(""); }}
-            >
-              <X className="h-3 w-3" />
-            </button>
-            {uploadMutation.isPending && (
-              <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-                <Loader2 className="h-5 w-5 animate-spin" />
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="h-24 w-24 rounded-lg border border-dashed flex flex-col items-center justify-center bg-muted/50 text-muted-foreground">
-            {uploadMutation.isPending ? (
-              <Loader2 className="h-6 w-6 animate-spin mb-2" />
-            ) : (
-              <ImageIcon className="h-6 w-6 mb-2" />
-            )}
-            <span className="text-xs">No image</span>
-          </div>
-        )}
-        
-        <div>
-          <Button type="button" variant="outline" className="relative overflow-hidden cursor-pointer" disabled={uploadMutation.isPending}>
-            <span className="flex items-center gap-2">
-              {uploadMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              {preview ? "Change Image" : "Upload Image"}
-            </span>
-            <input
-              type="file"
-              accept="image/*"
-              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-              onChange={handleFileChange}
-              disabled={uploadMutation.isPending}
+          <>
+            <Box
+              component="img"
+              src={preview}
+              alt="Preview"
+              sx={{ width: "100%", height: "100%", objectFit: "cover" }}
             />
-          </Button>
-          <p className="text-xs text-muted-foreground mt-2">Max file size: 5MB</p>
-        </div>
-      </div>
-    </div>
+            <IconButton
+              size="small"
+              onClick={() => {
+                setPreview(null);
+                onChange("");
+              }}
+              sx={{
+                position: "absolute",
+                top: 2,
+                right: 2,
+                bgcolor: "rgba(0,0,0,0.5)",
+                color: "#fff",
+                p: 0.25,
+                "&:hover": { bgcolor: "error.main" },
+              }}
+            >
+              <Close sx={{ fontSize: 12 }} />
+            </IconButton>
+            {uploadMutation.isPending && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  inset: 0,
+                  bgcolor: "rgba(0,0,0,0.4)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <CircularProgress size={24} sx={{ color: "#fff" }} />
+              </Box>
+            )}
+          </>
+        ) : (
+          <Box sx={{ textAlign: "center" }}>
+            {uploadMutation.isPending ? (
+              <CircularProgress size={24} />
+            ) : (
+              <ImageIcon sx={{ color: "text.disabled", mb: 0.5 }} />
+            )}
+            <Typography variant="caption" color="text.disabled" display="block">
+              No image
+            </Typography>
+          </Box>
+        )}
+      </Box>
+
+      <Box>
+        <Button
+          component="label"
+          variant="outlined"
+          startIcon={
+            uploadMutation.isPending ? (
+              <CircularProgress size={16} />
+            ) : (
+              <CloudUpload />
+            )
+          }
+          disabled={uploadMutation.isPending}
+          size="small"
+        >
+          {preview ? "Change Image" : "Upload Image"}
+          <input
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={handleFileChange}
+            disabled={uploadMutation.isPending}
+          />
+        </Button>
+        <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+          Max file size: 5MB
+        </Typography>
+      </Box>
+    </Box>
   );
 }

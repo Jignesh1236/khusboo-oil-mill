@@ -1,142 +1,236 @@
 import { useGetUserOrders } from "@/lib/api-client-react";
 import { useStoreUser } from "@/hooks/use-store-user";
 import { useCurrency } from "@/hooks/use-currency";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Package, MapPin, Phone, Clock } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import {
+  Box,
+  Typography,
+  Paper,
+  Chip,
+  Divider,
+  Skeleton,
+  Stack,
+} from "@mui/material";
+import { Inventory2, LocationOn, Phone, AccessTime } from "@mui/icons-material";
+
+function getStatusColor(
+  status: string
+): "warning" | "info" | "secondary" | "success" | "error" | "default" {
+  switch (status.toLowerCase()) {
+    case "pending": return "warning";
+    case "confirmed": return "info";
+    case "out for delivery": return "secondary";
+    case "delivered": return "success";
+    case "cancelled": return "error";
+    default: return "default";
+  }
+}
+
+function getTimelineDotColor(status: string): string {
+  switch (status.toLowerCase()) {
+    case "pending": return "#eab308";
+    case "confirmed": return "#0ea5e9";
+    case "out for delivery": return "#a855f7";
+    case "delivered": return "#22c55e";
+    case "cancelled": return "#ef4444";
+    default: return "#94a3b8";
+  }
+}
 
 export default function Orders() {
   const { user } = useStoreUser();
   const { format } = useCurrency();
   const { data: orders, isLoading } = useGetUserOrders(user?._id || "", {
-    query: { enabled: !!user?._id, queryKey: ["userOrders", user?._id] }
+    query: { enabled: !!user?._id, queryKey: ["userOrders", user?._id] },
   });
 
   if (isLoading) {
     return (
-      <div className="space-y-4 pb-20">
-        <Skeleton className="h-8 w-48 mb-6" />
-        {[1, 2, 3].map(i => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}
-      </div>
+      <Box sx={{ pb: 10 }}>
+        <Skeleton variant="text" width={180} height={40} sx={{ mb: 3 }} />
+        {[1, 2, 3].map((i) => (
+          <Skeleton key={i} variant="rounded" height={180} sx={{ mb: 2, borderRadius: 3 }} />
+        ))}
+      </Box>
     );
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending': return 'bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20 border-yellow-200';
-      case 'confirmed': return 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-blue-200';
-      case 'out for delivery': return 'bg-purple-500/10 text-purple-600 hover:bg-purple-500/20 border-purple-200';
-      case 'delivered': return 'bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-200';
-      case 'cancelled': return 'bg-red-500/10 text-red-600 hover:bg-red-500/20 border-red-200';
-      default: return 'bg-secondary text-secondary-foreground';
-    }
-  };
-
   return (
-    <div className="pb-24 lg:pb-10">
-      <h1 className="text-2xl font-bold mb-6">Order History</h1>
+    <Box sx={{ pb: { xs: 10, md: 4 } }}>
+      <Typography variant="h5" fontWeight={700} gutterBottom sx={{ mb: 3 }}>
+        Order History
+      </Typography>
 
       {!orders || orders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center bg-card border rounded-xl">
-          <Package className="h-16 w-16 text-muted-foreground opacity-20 mb-4" />
-          <h2 className="text-xl font-medium mb-2">No orders yet</h2>
-          <p className="text-muted-foreground">When you place an order, it will appear here.</p>
-        </div>
+        <Paper
+          variant="outlined"
+          sx={{ borderRadius: 3, p: 6, textAlign: "center" }}
+        >
+          <Inventory2 sx={{ fontSize: 64, color: "text.disabled", mb: 2 }} />
+          <Typography variant="h6" gutterBottom>
+            No orders yet
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            When you place an order, it will appear here.
+          </Typography>
+        </Paper>
       ) : (
-        <div className="space-y-6">
+        <Stack spacing={3}>
           {orders.map((order) => (
-            <div key={order._id} className="border bg-card rounded-xl overflow-hidden shadow-sm">
-              <div className="p-4 border-b bg-muted/30 flex flex-wrap justify-between gap-4 items-center">
-                <div>
-                  <p className="text-xs text-muted-foreground font-mono">Order #{order._id.slice(-8).toUpperCase()}</p>
-                  <p className="text-sm font-medium">{new Date(order.createdAt).toLocaleDateString()} {new Date(order.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-                </div>
-                <Badge variant="outline" className={getStatusColor(order.status)}>
-                  {order.status.toUpperCase()}
-                </Badge>
-              </div>
-              
-              <div className="p-4">
-                <div className="space-y-3 mb-6">
-                  {order.items.map((item, idx) => (
-                    <div key={idx} className="flex justify-between text-sm">
-                      <div className="flex gap-2">
-                        <span className="font-medium w-6">{item.qty}x</span>
-                        <span className="text-muted-foreground">{item.name}</span>
-                      </div>
-                      <span className="font-medium">{format(item.price * item.qty)}</span>
-                    </div>
-                  ))}
-                </div>
+            <Paper key={order._id} variant="outlined" sx={{ borderRadius: 3, overflow: "hidden" }}>
+              <Box
+                sx={{
+                  px: 2.5,
+                  py: 1.5,
+                  bgcolor: "action.hover",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 1,
+                  borderBottom: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <Box>
+                  <Typography
+                    variant="caption"
+                    fontFamily="monospace"
+                    color="text.secondary"
+                    display="block"
+                  >
+                    Order #{order._id.slice(-8).toUpperCase()}
+                  </Typography>
+                  <Typography variant="body2" fontWeight={500}>
+                    {new Date(order.createdAt).toLocaleDateString()}{" "}
+                    {new Date(order.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </Typography>
+                </Box>
+                <Chip
+                  label={order.status.toUpperCase()}
+                  size="small"
+                  color={getStatusColor(order.status)}
+                  variant="outlined"
+                  sx={{ fontWeight: 700, fontSize: "0.7rem" }}
+                />
+              </Box>
 
-                {/* Status History for User - Timeline */}
+              <Box sx={{ p: 2.5 }}>
+                <Stack spacing={1} sx={{ mb: 3 }}>
+                  {order.items.map((item, idx) => (
+                    <Box
+                      key={idx}
+                      sx={{ display: "flex", justifyContent: "space-between", fontSize: "0.875rem" }}
+                    >
+                      <Box sx={{ display: "flex", gap: 1 }}>
+                        <Typography variant="body2" fontWeight={600}>
+                          {item.qty}x
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {item.name}
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" fontWeight={500}>
+                        {format(item.price * item.qty)}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Stack>
+
                 {order.statusHistory && order.statusHistory.length > 0 && (
-                  <div className="mb-6">
-                    <h4 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
+                  <Box sx={{ mb: 3 }}>
+                    <Typography
+                      variant="body2"
+                      fontWeight={600}
+                      sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 2 }}
+                    >
+                      <AccessTime fontSize="small" sx={{ color: "text.secondary" }} />
                       Order Tracking
-                    </h4>
-                    <div className="relative pl-6 space-y-4 border-l-2 border-muted">
-                      {order.statusHistory.map((history: any, idx: number) => (
-                        <div key={idx} className="relative">
-                          {/* Timeline Dot */}
-                          <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-background ${
-                            history.status.toLowerCase() === 'pending' ? 'bg-yellow-500' :
-                            history.status.toLowerCase() === 'confirmed' ? 'bg-blue-500' :
-                            history.status.toLowerCase() === 'out for delivery' ? 'bg-purple-500' :
-                            history.status.toLowerCase() === 'delivered' ? 'bg-green-500' : 'bg-red-500'
-                          }`} />
-                          
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                            <Badge className={getStatusColor(history.status)}>
-                              {history.status}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(history.timestamp).toLocaleString('en-IN', { 
-                                weekday: 'short', 
-                                year: 'numeric', 
-                                month: 'short', 
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
+                    </Typography>
+                    <Box sx={{ pl: 2, borderLeft: "2px solid", borderColor: "divider", display: "flex", flexDirection: "column", gap: 2 }}>
+                      {(order.statusHistory as any[]).map((history, idx) => (
+                        <Box key={idx} sx={{ position: "relative" }}>
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              left: -17,
+                              top: 4,
+                              width: 14,
+                              height: 14,
+                              borderRadius: "50%",
+                              bgcolor: getTimelineDotColor(history.status),
+                              border: "2px solid",
+                              borderColor: "background.paper",
+                            }}
+                          />
+                          <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1 }}>
+                            <Chip
+                              label={history.status}
+                              size="small"
+                              color={getStatusColor(history.status)}
+                              variant="outlined"
+                              sx={{ fontSize: "0.7rem" }}
+                            />
+                            <Typography variant="caption" color="text.secondary">
+                              {new Date(history.timestamp).toLocaleString("en-IN", {
+                                weekday: "short",
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
                               })}
-                            </span>
-                          </div>
-                        </div>
+                            </Typography>
+                          </Box>
+                        </Box>
                       ))}
-                    </div>
-                  </div>
+                    </Box>
+                  </Box>
                 )}
 
-                <Separator className="my-4" />
-                
-                <div className="flex justify-between pt-2 font-bold text-lg">
-                  <span>Total</span>
-                  <span>{format(order.totalAmount)}</span>
-                </div>
-              </div>
+                <Divider sx={{ my: 2 }} />
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Typography variant="body1" fontWeight={700}>
+                    Total
+                  </Typography>
+                  <Typography variant="body1" fontWeight={700}>
+                    {format(order.totalAmount)}
+                  </Typography>
+                </Box>
+              </Box>
 
-              <div className="p-4 bg-muted/10 border-t text-sm space-y-2">
-                <div className="flex gap-2 items-start">
-                  <MapPin className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
-                  <div className="text-muted-foreground">
-                    <p>{order.address.fullName || "Customer"}</p>
-                    <p>{order.address.houseFlatBuilding}</p>
-                    <p>{order.address.streetArea}</p>
-                    <p>{order.address.city}, {order.address.state}, {order.address.country} - {order.address.pincode}</p>
-                    {order.address.landmark && <p>Landmark: {order.address.landmark}</p>}
-                  </div>
-                </div>
-                <div className="flex gap-2 items-center">
-                  <Phone className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <span className="text-muted-foreground">{order.address.phone}</span>
-                </div>
-              </div>
-            </div>
+              <Box
+                sx={{
+                  px: 2.5,
+                  py: 2,
+                  bgcolor: "action.hover",
+                  borderTop: "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start", mb: 1 }}>
+                  <LocationOn fontSize="small" sx={{ color: "text.secondary", mt: 0.25, flexShrink: 0 }} />
+                  <Box>
+                    <Typography variant="body2">{order.address.fullName || "Customer"}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {order.address.houseFlatBuilding}, {order.address.streetArea}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {order.address.city}, {order.address.state}, {order.address.country} –{" "}
+                      {order.address.pincode}
+                    </Typography>
+                  </Box>
+                </Box>
+                <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                  <Phone fontSize="small" sx={{ color: "text.secondary" }} />
+                  <Typography variant="body2" color="text.secondary">
+                    {order.address.phone}
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
           ))}
-        </div>
+        </Stack>
       )}
-    </div>
+    </Box>
   );
 }

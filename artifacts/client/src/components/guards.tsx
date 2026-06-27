@@ -2,13 +2,12 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useStoreUser } from "@/hooks/use-store-user";
 import { useCheckUserIp } from "@/lib/api-client-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Box, CircularProgress, Typography } from "@mui/material";
 
 export function IPGuard({ children }: { children: React.ReactNode }) {
   const { user, saveUser } = useStoreUser();
   const [, setLocation] = useLocation();
   const [checking, setChecking] = useState(true);
-  
   const checkIpMutation = useCheckUserIp();
 
   useEffect(() => {
@@ -17,11 +16,9 @@ export function IPGuard({ children }: { children: React.ReactNode }) {
         setChecking(false);
         return;
       }
-      
       try {
         const response = await fetch("https://api.ipify.org?format=json");
         const data = await response.json();
-        
         checkIpMutation.mutate(
           { data: { ip: data.ip } },
           {
@@ -32,7 +29,7 @@ export function IPGuard({ children }: { children: React.ReactNode }) {
                   name: res.user.name,
                   ip: res.user.ip,
                   address: res.user.address,
-                  phone: res.user.phone
+                  phone: res.user.phone,
                 });
                 setChecking(false);
               } else {
@@ -40,26 +37,34 @@ export function IPGuard({ children }: { children: React.ReactNode }) {
               }
             },
             onError: () => {
-              // fallback to onboarding
               setLocation("/onboarding");
-            }
+            },
           }
         );
-      } catch (error) {
-        console.error("IP Check Failed", error);
+      } catch {
         setLocation("/onboarding");
       }
     }
-    
     checkIp();
   }, [user]);
 
   if (checking) {
     return (
-      <div className="flex h-screen w-full items-center justify-center flex-col gap-4">
-        <Skeleton className="h-12 w-12 rounded-full" />
-        <p className="text-muted-foreground">Loading store...</p>
-      </div>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          gap: 2,
+        }}
+      >
+        <CircularProgress color="primary" />
+        <Typography color="text.secondary" variant="body2">
+          Loading store...
+        </Typography>
+      </Box>
     );
   }
 
@@ -71,7 +76,7 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('adminToken');
+    const token = localStorage.getItem("adminToken");
     if (!token) {
       setLocation("/admin/login");
     } else {
@@ -80,7 +85,11 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (checking) {
-    return <div className="p-8">Checking admin auth...</div>;
+    return (
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
+        <CircularProgress color="primary" />
+      </Box>
+    );
   }
 
   return <>{children}</>;

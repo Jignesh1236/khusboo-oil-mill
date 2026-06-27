@@ -1,49 +1,129 @@
 import { Link } from "wouter";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardMedia,
+  Typography,
+  Chip,
+  Box,
+  Stack,
+} from "@mui/material";
 import type { Product } from "@/lib/api-client-react";
 import { useCurrency } from "@/hooks/use-currency";
 
 export function ProductCard({ product }: { product: Product }) {
   const { format } = useCurrency();
-  const imageUrl = product.images?.[0] 
-    ? product.images[0].replace('/upload/', '/upload/w_400,h_400,c_fill,q_auto,f_auto/')
+  const imageUrl = product.images?.[0]
+    ? product.images[0].replace(
+        "/upload/",
+        "/upload/w_400,h_400,c_fill,q_auto,f_auto/"
+      )
     : "https://via.placeholder.com/400x400?text=No+Image";
 
-  const discountedPrice = product.discountPercent 
-    ? product.price - (product.price * product.discountPercent / 100)
+  const discountedPrice = product.discountPercent
+    ? product.price - (product.price * product.discountPercent) / 100
     : product.price;
 
   return (
-    <Link href={`/product/${product._id}`}>
-      <Card className="overflow-hidden hover:shadow-lg transition-all cursor-pointer h-full flex flex-col">
-        <div className="relative aspect-square">
-          <img src={imageUrl} alt={product.name} className="w-full h-full object-cover" />
-          <div className="absolute top-2 left-2 flex flex-col gap-1">
+    <Link href={`/product/${product._id}`} style={{ textDecoration: "none" }}>
+      <Card
+        sx={{
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          cursor: "pointer",
+          transition: "transform 0.2s, box-shadow 0.2s",
+          "&:hover": {
+            transform: "translateY(-3px)",
+            boxShadow: 6,
+          },
+        }}
+      >
+        <Box sx={{ position: "relative" }}>
+          <CardMedia
+            component="img"
+            image={imageUrl}
+            alt={product.name}
+            sx={{ aspectRatio: "1 / 1", objectFit: "cover" }}
+          />
+          <Stack
+            direction="column"
+            spacing={0.5}
+            sx={{ position: "absolute", top: 8, left: 8 }}
+          >
             {product.discountPercent ? (
-              <Badge variant="destructive">{product.discountPercent}% OFF</Badge>
+              <Chip
+                label={`${product.discountPercent}% OFF`}
+                size="small"
+                color="error"
+                sx={{ fontSize: "0.7rem", height: 22 }}
+              />
             ) : null}
             {product.freeDelivery ? (
-              <Badge className="bg-primary/10 text-primary hover:bg-primary/20">Free Delivery</Badge>
+              <Chip
+                label="Free Delivery"
+                size="small"
+                color="primary"
+                variant="outlined"
+                sx={{ fontSize: "0.7rem", height: 22, bgcolor: "background.paper" }}
+              />
             ) : null}
-          </div>
+          </Stack>
           {product.stock === 0 && (
-            <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
-              <Badge variant="secondary" className="text-lg py-1 px-3 shadow-md backdrop-blur-md">Out of Stock</Badge>
-            </div>
+            <Box
+              sx={{
+                position: "absolute",
+                inset: 0,
+                bgcolor: "rgba(0,0,0,0.45)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Chip
+                label="Out of Stock"
+                size="small"
+                sx={{
+                  bgcolor: "background.paper",
+                  fontWeight: 700,
+                  fontSize: "0.75rem",
+                }}
+              />
+            </Box>
           )}
-        </div>
-        <CardContent className="p-4 flex-1 flex flex-col justify-between">
-          <div>
-            <div className="text-xs text-muted-foreground mb-1">{product.category}</div>
-            <h3 className="font-medium line-clamp-2 mb-2">{product.name}</h3>
-          </div>
-          <div className="flex items-center gap-2 mt-auto">
-            <span className="font-bold text-lg">{format(discountedPrice)}</span>
+        </Box>
+        <CardContent sx={{ flex: 1, display: "flex", flexDirection: "column", p: 1.5 }}>
+          <Typography variant="caption" color="text.secondary" gutterBottom>
+            {product.category}
+          </Typography>
+          <Typography
+            variant="body2"
+            fontWeight={500}
+            sx={{
+              overflow: "hidden",
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              mb: 1,
+              lineHeight: 1.4,
+            }}
+          >
+            {product.name}
+          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: "auto" }}>
+            <Typography variant="subtitle1" fontWeight={700} color="text.primary">
+              {format(discountedPrice)}
+            </Typography>
             {product.discountPercent ? (
-              <span className="text-sm text-muted-foreground line-through">{format(product.price)}</span>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ textDecoration: "line-through" }}
+              >
+                {format(product.price)}
+              </Typography>
             ) : null}
-          </div>
+          </Box>
         </CardContent>
       </Card>
     </Link>

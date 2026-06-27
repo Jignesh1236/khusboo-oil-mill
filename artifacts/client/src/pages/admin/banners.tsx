@@ -1,172 +1,114 @@
 import { useState } from "react";
-import { 
-  useListBanners, 
-  useCreateBanner, 
-  useUpdateBanner, 
-  useDeleteBanner,
-  getListBannersQueryKey
+import {
+  useListBanners, useCreateBanner, useUpdateBanner, useDeleteBanner,
+  getListBannersQueryKey,
 } from "@/lib/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, Trash2, Plus, Loader2 } from "lucide-react";
+import {
+  Box, Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions,
+  Table, TableBody, TableCell, TableHead, TableRow, IconButton, Typography,
+  Switch, FormControlLabel, CircularProgress, Chip,
+} from "@mui/material";
+import { Edit, Delete, Add } from "@mui/icons-material";
 import { ImageUploader } from "@/components/image-uploader";
 import { toast } from "@/hooks/use-toast";
 
 export default function AdminBanners() {
   const queryClient = useQueryClient();
   const { data: banners, isLoading } = useListBanners();
-  
   const createMutation = useCreateBanner();
   const updateMutation = useUpdateBanner();
   const deleteMutation = useDeleteBanner();
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ title: "", imageUrl: "", link: "", order: 0, active: true });
+  const [form, setForm] = useState({ title: "", imageUrl: "", link: "", order: 0, active: true });
 
-  const resetForm = () => {
-    setFormData({ title: "", imageUrl: "", link: "", order: 0, active: true });
-    setEditingId(null);
-  };
+  const reset = () => { setForm({ title: "", imageUrl: "", link: "", order: 0, active: true }); setEditingId(null); };
 
-  const handleEdit = (banner: any) => {
-    setFormData({ 
-      title: banner.title, 
-      imageUrl: banner.imageUrl || "", 
-      link: banner.link || "", 
-      order: banner.order || 0, 
-      active: banner.active 
-    });
-    setEditingId(banner._id);
-    setIsDialogOpen(true);
+  const handleEdit = (b: any) => {
+    setForm({ title: b.title, imageUrl: b.imageUrl || "", link: b.link || "", order: b.order || 0, active: b.active });
+    setEditingId(b._id);
+    setIsOpen(true);
   };
 
   const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this banner?")) {
-      deleteMutation.mutate(
-        { bannerId: id },
-        {
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: getListBannersQueryKey() });
-            toast({ title: "Banner deleted" });
-          }
-        }
-      );
-    }
+    if (!confirm("Delete this banner?")) return;
+    deleteMutation.mutate({ bannerId: id }, { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListBannersQueryKey() }); toast({ title: "Banner deleted" }); } });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingId) {
-      updateMutation.mutate(
-        { bannerId: editingId, data: formData },
-        {
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: getListBannersQueryKey() });
-            setIsDialogOpen(false);
-            resetForm();
-            toast({ title: "Banner updated" });
-          }
-        }
-      );
-    } else {
-      createMutation.mutate(
-        { data: formData },
-        {
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: getListBannersQueryKey() });
-            setIsDialogOpen(false);
-            resetForm();
-            toast({ title: "Banner created" });
-          }
-        }
-      );
-    }
+    const opts = { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListBannersQueryKey() }); setIsOpen(false); reset(); toast({ title: editingId ? "Banner updated" : "Banner created" }); } };
+    if (editingId) updateMutation.mutate({ bannerId: editingId, data: form }, opts);
+    else createMutation.mutate({ data: form }, opts);
   };
 
-  if (isLoading) return <div className="p-10 flex justify-center"><Loader2 className="animate-spin" /></div>;
-
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Banners</h1>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) resetForm(); }}>
-          <DialogTrigger asChild>
-            <Button><Plus className="w-4 h-4 mr-2" /> Add Banner</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingId ? "Edit" : "Add"} Banner</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Title</label>
-                <Input value={formData.title} onChange={e => setFormData(p => ({...p, title: e.target.value}))} required />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Image</label>
-                <ImageUploader value={formData.imageUrl} onChange={url => setFormData(p => ({...p, imageUrl: url}))} folder="banners" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Link URL (optional)</label>
-                <Input value={formData.link} onChange={e => setFormData(p => ({...p, link: e.target.value}))} />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Order</label>
-                <Input type="number" value={formData.order} onChange={e => setFormData(p => ({...p, order: parseInt(e.target.value)}))} />
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch checked={formData.active} onCheckedChange={c => setFormData(p => ({...p, active: c}))} />
-                <label className="text-sm font-medium">Active</label>
-              </div>
-              <Button type="submit" className="w-full" disabled={createMutation.isPending || updateMutation.isPending}>
-                Save Banner
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Typography variant="h5" fontWeight={700}>Banners</Typography>
+        <Button variant="contained" startIcon={<Add />} onClick={() => { reset(); setIsOpen(true); }}>Add Banner</Button>
+      </Box>
 
-      <div className="border rounded-xl overflow-hidden bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Image</TableHead>
-              <TableHead>Title</TableHead>
-              <TableHead>Order</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {banners?.map((banner) => (
-              <TableRow key={banner._id}>
-                <TableCell>
-                  {banner.imageUrl ? (
-                    <img src={banner.imageUrl.replace('/upload/', '/upload/w_150,h_50,c_fill,q_auto/')} alt="Banner" className="h-8 object-cover rounded" />
-                  ) : <span className="text-muted-foreground">No image</span>}
-                </TableCell>
-                <TableCell className="font-medium">{banner.title}</TableCell>
-                <TableCell>{banner.order}</TableCell>
-                <TableCell>{banner.active ? "Active" : "Inactive"}</TableCell>
-                <TableCell className="text-right space-x-2">
-                  <Button variant="ghost" size="icon" onClick={() => handleEdit(banner)}><Edit className="w-4 h-4" /></Button>
-                  <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(banner._id)}><Trash2 className="w-4 h-4" /></Button>
-                </TableCell>
-              </TableRow>
-            ))}
-            {(!banners || banners.length === 0) && (
+      {isLoading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", p: 6 }}><CircularProgress /></Box>
+      ) : (
+        <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, overflow: "hidden" }}>
+          <Table>
+            <TableHead sx={{ bgcolor: "action.hover" }}>
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">No banners found.</TableCell>
+                <TableCell>Image</TableCell>
+                <TableCell>Title</TableCell>
+                <TableCell>Order</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell align="right">Actions</TableCell>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
+            </TableHead>
+            <TableBody>
+              {banners?.map((b) => (
+                <TableRow key={b._id} hover>
+                  <TableCell>
+                    {b.imageUrl ? (
+                      <Box component="img" src={b.imageUrl.replace("/upload/", "/upload/w_120,h_40,c_fill,q_auto/")} alt="" sx={{ height: 32, borderRadius: 1, objectFit: "cover" }} />
+                    ) : <Typography variant="caption" color="text.disabled">No image</Typography>}
+                  </TableCell>
+                  <TableCell fontWeight={500}>{b.title}</TableCell>
+                  <TableCell>{b.order}</TableCell>
+                  <TableCell><Chip label={b.active ? "Active" : "Inactive"} size="small" color={b.active ? "success" : "default"} variant="outlined" /></TableCell>
+                  <TableCell align="right">
+                    <IconButton size="small" onClick={() => handleEdit(b)}><Edit fontSize="small" /></IconButton>
+                    <IconButton size="small" color="error" onClick={() => handleDelete(b._id)}><Delete fontSize="small" /></IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {!banners?.length && (
+                <TableRow><TableCell colSpan={5} sx={{ textAlign: "center", py: 6, color: "text.secondary" }}>No banners found.</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Box>
+      )}
+
+      <Dialog open={isOpen} onClose={() => { setIsOpen(false); reset(); }} maxWidth="sm" fullWidth>
+        <DialogTitle fontWeight={700}>{editingId ? "Edit" : "Add"} Banner</DialogTitle>
+        <Box component="form" onSubmit={handleSubmit}>
+          <DialogContent dividers sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <TextField label="Title" value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} required fullWidth />
+            <Box>
+              <Typography variant="body2" fontWeight={500} gutterBottom>Image</Typography>
+              <ImageUploader value={form.imageUrl} onChange={(url) => setForm((p) => ({ ...p, imageUrl: url }))} folder="banners" />
+            </Box>
+            <TextField label="Link URL (optional)" value={form.link} onChange={(e) => setForm((p) => ({ ...p, link: e.target.value }))} fullWidth />
+            <TextField label="Order" type="number" value={form.order} onChange={(e) => setForm((p) => ({ ...p, order: parseInt(e.target.value) || 0 }))} fullWidth />
+            <FormControlLabel control={<Switch checked={form.active} onChange={(e) => setForm((p) => ({ ...p, active: e.target.checked }))} />} label="Active" />
+          </DialogContent>
+          <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
+            <Button variant="outlined" onClick={() => { setIsOpen(false); reset(); }}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={createMutation.isPending || updateMutation.isPending}>Save Banner</Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
+    </Box>
   );
 }

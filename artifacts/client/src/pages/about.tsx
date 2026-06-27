@@ -1,113 +1,197 @@
 import { useGetConfig } from "@/lib/api-client-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Phone, Mail, Clock, Instagram, Facebook } from "lucide-react";
+import {
+  Box,
+  Typography,
+  Grid,
+  Skeleton,
+  Paper,
+  Divider,
+} from "@mui/material";
+import {
+  LocationOn,
+  Phone,
+  Email,
+  AccessTime,
+  Instagram,
+  Facebook,
+} from "@mui/icons-material";
 
 export default function About() {
   const { data: config, isLoading } = useGetConfig();
 
   if (isLoading) {
     return (
-      <div className="space-y-8 pb-20">
-        <Skeleton className="h-64 w-full rounded-2xl" />
-        <Skeleton className="h-8 w-48" />
-        <div className="space-y-4">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-3/4" />
-        </div>
-      </div>
+      <Box sx={{ pb: 10 }}>
+        <Skeleton variant="rounded" height={260} sx={{ borderRadius: 3, mb: 4 }} />
+        <Skeleton variant="text" width={200} height={40} />
+        <Skeleton variant="text" sx={{ mt: 1 }} />
+        <Skeleton variant="text" width="75%" />
+      </Box>
     );
   }
 
   return (
-    <div className="pb-24 lg:pb-10 max-w-3xl mx-auto space-y-12">
-      {/* About Section */}
-      <section className="text-center space-y-4">
-        {config?.logoUrl ? (
-          <img src={config.logoUrl} alt="Store Logo" className="h-24 w-auto mx-auto mb-6 object-contain" />
-        ) : null}
-        <h1 className="text-4xl font-bold">{config?.storeName || "About Us"}</h1>
-        <p className="text-lg text-muted-foreground leading-relaxed whitespace-pre-line">
+    <Box sx={{ pb: { xs: 10, md: 4 }, maxWidth: 840, mx: "auto" }}>
+      <Box sx={{ textAlign: "center", mb: 6 }}>
+        {config?.logoUrl && (
+          <Box
+            component="img"
+            src={config.logoUrl}
+            alt="Store Logo"
+            sx={{ height: 96, width: "auto", objectFit: "contain", mx: "auto", mb: 3, display: "block" }}
+          />
+        )}
+        <Typography variant="h3" fontWeight={700} gutterBottom>
+          {config?.storeName || "About Us"}
+        </Typography>
+        <Typography
+          variant="body1"
+          color="text.secondary"
+          sx={{ lineHeight: 1.8, whiteSpace: "pre-line", maxWidth: 600, mx: "auto" }}
+        >
           {config?.aboutUs || "Welcome to our store. We provide the best quality products for you."}
-        </p>
-      </section>
+        </Typography>
+      </Box>
 
-      {/* Contact & Info Grid */}
-      <div className="grid md:grid-cols-2 gap-6">
-        <div className="border bg-card p-6 rounded-2xl space-y-6">
-          <h2 className="text-xl font-bold">Contact Info</h2>
-          <div className="space-y-4">
-            {config?.contactAddress && (
-              <div className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                <span className="text-muted-foreground">{config.contactAddress}</span>
-              </div>
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, height: "100%" }}>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              Contact Info
+            </Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
+              {config?.contactAddress && (
+                <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
+                  <LocationOn color="primary" sx={{ mt: 0.25 }} />
+                  <Typography variant="body2" color="text.secondary">
+                    {config.contactAddress}
+                  </Typography>
+                </Box>
+              )}
+              {config?.contactPhone && (
+                <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+                  <Phone color="primary" />
+                  <Typography variant="body2" color="text.secondary">
+                    {config.contactPhone}
+                  </Typography>
+                </Box>
+              )}
+              {config?.contactEmail && (
+                <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+                  <Email color="primary" />
+                  <Typography variant="body2" color="text.secondary">
+                    {config.contactEmail}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+
+            {(config?.instagramUrl || config?.facebookUrl) && (
+              <>
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="subtitle2" fontWeight={700} gutterBottom>
+                  Follow Us
+                </Typography>
+                <Box sx={{ display: "flex", gap: 1.5 }}>
+                  {config?.instagramUrl && (
+                    <Box
+                      component="a"
+                      href={config.instagramUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        bgcolor: "action.hover",
+                        color: "text.secondary",
+                        transition: "all 0.2s",
+                        "&:hover": { bgcolor: "primary.main", color: "#fff" },
+                      }}
+                    >
+                      <Instagram fontSize="small" />
+                    </Box>
+                  )}
+                  {config?.facebookUrl && (
+                    <Box
+                      component="a"
+                      href={config.facebookUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        bgcolor: "action.hover",
+                        color: "text.secondary",
+                        transition: "all 0.2s",
+                        "&:hover": { bgcolor: "primary.main", color: "#fff" },
+                      }}
+                    >
+                      <Facebook fontSize="small" />
+                    </Box>
+                  )}
+                </Box>
+              </>
             )}
-            {config?.contactPhone && (
-              <div className="flex items-center gap-3">
-                <Phone className="w-5 h-5 text-primary shrink-0" />
-                <span className="text-muted-foreground">{config.contactPhone}</span>
-              </div>
-            )}
-            {config?.contactEmail && (
-              <div className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-primary shrink-0" />
-                <span className="text-muted-foreground">{config.contactEmail}</span>
-              </div>
-            )}
-          </div>
+          </Paper>
+        </Grid>
 
-          {(config?.instagramUrl || config?.facebookUrl) && (
-            <div className="pt-4 border-t">
-              <h3 className="font-bold mb-3">Follow Us</h3>
-              <div className="flex gap-4">
-                {config?.instagramUrl && (
-                  <a href={config.instagramUrl} target="_blank" rel="noreferrer" className="bg-muted p-2 rounded-full hover:bg-primary hover:text-primary-foreground transition-colors">
-                    <Instagram className="w-5 h-5" />
-                  </a>
-                )}
-                {config?.facebookUrl && (
-                  <a href={config.facebookUrl} target="_blank" rel="noreferrer" className="bg-muted p-2 rounded-full hover:bg-primary hover:text-primary-foreground transition-colors">
-                    <Facebook className="w-5 h-5" />
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, height: "100%" }}>
+            <Typography variant="h6" fontWeight={700} gutterBottom>
+              Store Timings
+            </Typography>
+            <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start", mt: 2 }}>
+              <AccessTime color="primary" sx={{ mt: 0.25 }} />
+              <Box>
+                <Typography variant="body2" fontWeight={600}>
+                  {config?.storeTimingDays || "Monday – Saturday"}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {config?.storeTimingOpen || "09:00 AM"} – {config?.storeTimingClose || "08:00 PM"}
+                </Typography>
+              </Box>
+            </Box>
+          </Paper>
+        </Grid>
+      </Grid>
 
-        <div className="border bg-card p-6 rounded-2xl space-y-6">
-          <h2 className="text-xl font-bold">Store Timings</h2>
-          <div className="flex items-start gap-3">
-            <Clock className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <p className="font-medium">{config?.storeTimingDays || "Monday - Saturday"}</p>
-              <p className="text-muted-foreground">
-                {config?.storeTimingOpen || "09:00 AM"} - {config?.storeTimingClose || "08:00 PM"}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Map Embed */}
       {config?.mapEmbedUrl && (
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold">Location</h2>
-          <div className="w-full aspect-[16/9] md:aspect-[21/9] rounded-2xl overflow-hidden border bg-muted">
-            <iframe 
-              src={config.mapEmbedUrl} 
-              width="100%" 
-              height="100%" 
-              style={{ border: 0 }} 
-              allowFullScreen={true} 
-              loading="lazy" 
+        <Box>
+          <Typography variant="h6" fontWeight={700} gutterBottom>
+            Location
+          </Typography>
+          <Box
+            sx={{
+              width: "100%",
+              aspectRatio: { xs: "16/9", md: "21/9" },
+              borderRadius: 3,
+              overflow: "hidden",
+              border: "1px solid",
+              borderColor: "divider",
+              bgcolor: "action.hover",
+            }}
+          >
+            <iframe
+              src={config.mapEmbedUrl}
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              allowFullScreen
+              loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               title="Store Location Map"
             />
-          </div>
-        </section>
+          </Box>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

@@ -1,30 +1,39 @@
 import { useState } from "react";
-import { 
-  useListOrders, 
-  useUpdateOrderStatus,
-  useDeleteOrder,
-  getListOrdersQueryKey
+import {
+  useListOrders, useUpdateOrderStatus, useDeleteOrder, getListOrdersQueryKey, useGetConfig,
 } from "@/lib/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Eye, MessageCircle, Loader2, Trash2, Clock } from "lucide-react";
+import {
+  Box, Button, Select, MenuItem, FormControl, InputLabel, Dialog, DialogTitle,
+  DialogContent, DialogActions, Table, TableBody, TableCell, TableHead, TableRow,
+  IconButton, Typography, Chip, CircularProgress, Divider, Stack, Paper,
+} from "@mui/material";
+import { Visibility, Delete, WhatsApp, AccessTime } from "@mui/icons-material";
 import { toast } from "@/hooks/use-toast";
-import { useGetConfig } from "@/lib/api-client-react";
-import { Separator } from "@/components/ui/separator";
+import { useCurrency } from "@/hooks/use-currency";
+
+const STATUS_OPTIONS = ["pending", "confirmed", "out for delivery", "delivered", "cancelled"];
+
+function getStatusColor(status: string): "warning" | "info" | "secondary" | "success" | "error" | "default" {
+  switch (status.toLowerCase()) {
+    case "pending": return "warning";
+    case "confirmed": return "info";
+    case "out for delivery": return "secondary";
+    case "delivered": return "success";
+    case "cancelled": return "error";
+    default: return "default";
+  }
+}
 
 export default function AdminOrders() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  
+  const [statusFilter, setStatusFilter] = useState("");
   const { data: config } = useGetConfig();
   const { data: ordersPage, isLoading } = useListOrders({ page, limit: 20, status: statusFilter || undefined });
   const updateStatusMutation = useUpdateOrderStatus();
   const deleteOrderMutation = useDeleteOrder();
+  const { format } = useCurrency();
 
   const [viewingOrder, setViewingOrder] = useState<any | null>(null);
   const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
@@ -36,17 +45,10 @@ export default function AdminOrders() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey() });
           toast({ title: "Order status updated" });
-          if (viewingOrder && viewingOrder._id === orderId) {
-            setViewingOrder({ 
-              ...viewingOrder, 
-              status: newStatus,
-              statusHistory: [
-                ...viewingOrder.statusHistory,
-                { status: newStatus, timestamp: new Date() }
-              ] 
-            });
+          if (viewingOrder?._id === orderId) {
+            setViewingOrder({ ...viewingOrder, status: newStatus, statusHistory: [...(viewingOrder.statusHistory || []), { status: newStatus, timestamp: new Date() }] });
           }
-        }
+        },
       }
     );
   };
@@ -59,275 +61,209 @@ export default function AdminOrders() {
           queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey() });
           toast({ title: "Order deleted" });
           setDeleteOrderId(null);
-          if (viewingOrder && viewingOrder._id === orderId) {
-            setViewingOrder(null);
-          }
-        }
+          if (viewingOrder?._id === orderId) setViewingOrder(null);
+        },
       }
     );
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending': return 'bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20';
-      case 'confirmed': return 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20';
-      case 'out for delivery': return 'bg-purple-500/10 text-purple-600 hover:bg-purple-500/20';
-      case 'delivered': return 'bg-green-500/10 text-green-600 hover:bg-green-500/20';
-      case 'cancelled': return 'bg-red-500/10 text-red-600 hover:bg-red-500/20';
-      default: return 'bg-secondary text-secondary-foreground';
-    }
-  };
-
-  if (isLoading) return <div className="p-10 flex justify-center"><Loader2 className="animate-spin" /></div>;
-
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl font-bold">Orders</h1>
-        <div className="w-full sm:w-48">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger><SelectValue placeholder="All Statuses" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">All Statuses</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="confirmed">Confirmed</SelectItem>
-              <SelectItem value="out for delivery">Out for Delivery</SelectItem>
-              <SelectItem value="delivered">Delivered</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-            </SelectContent>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
+        <Typography variant="h5" fontWeight={700}>Orders</Typography>
+        <FormControl size="small" sx={{ minWidth: 180 }}>
+          <InputLabel>Status Filter</InputLabel>
+          <Select label="Status Filter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <MenuItem value="">All Statuses</MenuItem>
+            {STATUS_OPTIONS.map((s) => <MenuItem key={s} value={s} sx={{ textTransform: "capitalize" }}>{s}</MenuItem>)}
           </Select>
-        </div>
-      </div>
+        </FormControl>
+      </Box>
 
-      {/* Desktop Table View */}
-      <div className="border rounded-xl overflow-hidden bg-card hidden md:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Order ID</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      {isLoading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", p: 6 }}><CircularProgress /></Box>
+      ) : (
+        <>
+          {/* Desktop table */}
+          <Box sx={{ display: { xs: "none", md: "block" }, border: "1px solid", borderColor: "divider", borderRadius: 2, overflow: "hidden" }}>
+            <Table>
+              <TableHead sx={{ bgcolor: "action.hover" }}>
+                <TableRow>
+                  <TableCell>Order ID</TableCell>
+                  <TableCell>Date</TableCell>
+                  <TableCell>Customer</TableCell>
+                  <TableCell>Total</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {ordersPage?.orders.map((order) => (
+                  <TableRow key={order._id} hover>
+                    <TableCell><Typography variant="caption" fontFamily="monospace">#{order._id.slice(-8).toUpperCase()}</Typography></TableCell>
+                    <TableCell><Typography variant="body2">{new Date(order.createdAt).toLocaleDateString()}</Typography></TableCell>
+                    <TableCell><Typography variant="body2">{order.userName || "Guest"}</Typography></TableCell>
+                    <TableCell><Typography variant="body2" fontWeight={600}>{format(order.totalAmount)}</Typography></TableCell>
+                    <TableCell>
+                      <Select size="small" value={order.status} onChange={(e) => handleStatusChange(order._id, e.target.value)} sx={{ minWidth: 140, fontSize: "0.8rem" }}>
+                        {STATUS_OPTIONS.map((s) => <MenuItem key={s} value={s} sx={{ textTransform: "capitalize", fontSize: "0.8rem" }}>{s}</MenuItem>)}
+                      </Select>
+                    </TableCell>
+                    <TableCell align="right">
+                      <IconButton size="small" onClick={() => setViewingOrder(order)}><Visibility fontSize="small" /></IconButton>
+                      <IconButton size="small" color="error" onClick={() => setDeleteOrderId(order._id)}><Delete fontSize="small" /></IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!ordersPage?.orders?.length && (
+                  <TableRow><TableCell colSpan={6} sx={{ textAlign: "center", py: 6, color: "text.secondary" }}>No orders found.</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Box>
+
+          {/* Mobile cards */}
+          <Stack spacing={1.5} sx={{ display: { xs: "flex", md: "none" } }}>
             {ordersPage?.orders.map((order) => (
-              <TableRow key={order._id}>
-                <TableCell className="font-mono text-xs">{order._id.slice(-8).toUpperCase()}</TableCell>
-                <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
-                <TableCell>{order.userName || "Guest"}</TableCell>
-                <TableCell>₹{order.totalAmount.toFixed(2)}</TableCell>
-                <TableCell>
-                  <Select value={order.status} onValueChange={(val) => handleStatusChange(order._id, val)}>
-                    <SelectTrigger className={`h-8 text-xs ${getStatusColor(order.status)}`}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="confirmed">Confirmed</SelectItem>
-                      <SelectItem value="out for delivery">Out for Delivery</SelectItem>
-                      <SelectItem value="delivered">Delivered</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell className="text-right space-x-2">
-                  <Button variant="ghost" size="icon" onClick={() => setViewingOrder(order)}>
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => setDeleteOrderId(order._id)} className="text-destructive hover:text-destructive">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
+              <Paper key={order._id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 1 }}>
+                  <Box>
+                    <Typography variant="caption" fontFamily="monospace" color="text.secondary">#{order._id.slice(-8).toUpperCase()}</Typography>
+                    <Typography variant="body2">{new Date(order.createdAt).toLocaleDateString()}</Typography>
+                  </Box>
+                  <Chip label={order.status} size="small" color={getStatusColor(order.status)} variant="outlined" sx={{ textTransform: "capitalize", fontSize: "0.7rem" }} />
+                </Box>
+                <Typography variant="body2" fontWeight={600}>{order.userName || "Guest"}</Typography>
+                <Typography variant="h6" fontWeight={700}>{format(order.totalAmount)}</Typography>
+                <Box sx={{ mt: 1.5 }}>
+                  <FormControl size="small" fullWidth>
+                    <Select value={order.status} onChange={(e) => handleStatusChange(order._id, e.target.value)}>
+                      {STATUS_OPTIONS.map((s) => <MenuItem key={s} value={s} sx={{ textTransform: "capitalize" }}>{s}</MenuItem>)}
+                    </Select>
+                  </FormControl>
+                </Box>
+                <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 1.5 }}>
+                  <Button size="small" startIcon={<Visibility fontSize="small" />} onClick={() => setViewingOrder(order)}>View</Button>
+                  <Button size="small" color="error" startIcon={<Delete fontSize="small" />} onClick={() => setDeleteOrderId(order._id)}>Delete</Button>
+                </Box>
+              </Paper>
             ))}
-            {(!ordersPage?.orders || ordersPage.orders.length === 0) && (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">No orders found.</TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+          </Stack>
 
-      {/* Mobile Card View */}
-      <div className="space-y-4 md:hidden">
-        {ordersPage?.orders.map((order) => (
-          <div key={order._id} className="border rounded-xl p-4 bg-card">
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <p className="font-mono text-xs text-muted-foreground">#{order._id.slice(-8).toUpperCase()}</p>
-                <p className="text-sm">{new Date(order.createdAt).toLocaleDateString()}</p>
-              </div>
-              <Badge variant="outline" className={getStatusColor(order.status)}>
-                {order.status}
-              </Badge>
-            </div>
-
-            <p className="font-medium">{order.userName || "Guest"}</p>
-            <p className="text-2xl font-bold mt-1">₹{order.totalAmount.toFixed(2)}</p>
-
-            <div className="mt-4 space-y-2">
-              <Select value={order.status} onValueChange={(val) => handleStatusChange(order._id, val)}>
-                <SelectTrigger className="text-sm">
-                  <SelectValue placeholder="Update Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="out for delivery">Out for Delivery</SelectItem>
-                  <SelectItem value="delivered">Delivered</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex gap-2 mt-4 justify-end">
-              <Button variant="ghost" size="sm" onClick={() => setViewingOrder(order)}><Eye className="w-4 h-4 mr-1" /> View</Button>
-              <Button variant="ghost" size="sm" className="text-destructive" onClick={() => setDeleteOrderId(order._id)}><Trash2 className="w-4 h-4 mr-1" /> Delete</Button>
-            </div>
-          </div>
-        ))}
-        {(!ordersPage?.orders || ordersPage.orders.length === 0) && (
-          <div className="text-center py-10 text-muted-foreground border rounded-xl bg-card">No orders found.</div>
-        )}
-      </div>
-      
-      {ordersPage && ordersPage.pages > 1 && (
-        <div className="flex justify-center gap-2">
-          <Button variant="outline" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
-          <div className="flex items-center px-4">Page {page} of {ordersPage.pages}</div>
-          <Button variant="outline" disabled={page === ordersPage.pages} onClick={() => setPage(p => p + 1)}>Next</Button>
-        </div>
+          {ordersPage && ordersPage.pages > 1 && (
+            <Box sx={{ display: "flex", justifyContent: "center", gap: 1, alignItems: "center" }}>
+              <Button variant="outlined" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>Prev</Button>
+              <Typography variant="body2">Page {page} of {ordersPage.pages}</Typography>
+              <Button variant="outlined" disabled={page === ordersPage.pages} onClick={() => setPage((p) => p + 1)}>Next</Button>
+            </Box>
+          )}
+        </>
       )}
 
-      {/* Order Detail Modal */}
-      <Dialog open={!!viewingOrder} onOpenChange={(open) => !open && setViewingOrder(null)}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Order Details #{viewingOrder?._id.slice(-8).toUpperCase()}</DialogTitle>
-          </DialogHeader>
-          
+      {/* Order detail dialog */}
+      <Dialog open={!!viewingOrder} onClose={() => setViewingOrder(null)} maxWidth="md" fullWidth>
+        <DialogTitle fontWeight={700}>Order #{viewingOrder?._id.slice(-8).toUpperCase()}</DialogTitle>
+        <DialogContent dividers>
           {viewingOrder && (
-            <div className="space-y-6 pt-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-muted/50 p-4 rounded-lg">
-                <div>
-                  <h4 className="font-semibold text-sm mb-1">Customer Info</h4>
-                  <p className="text-sm">{viewingOrder.address.fullName || viewingOrder.userName || "Guest"}</p>
-                  <p className="text-sm">{viewingOrder.address.phone}</p>
-                  <a 
-                    href={`https://wa.me/${viewingOrder.address.phone}`} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="text-sm text-primary flex items-center gap-1 mt-1 hover:underline"
-                  >
-                    <MessageCircle className="w-3 h-3" /> Chat with customer
-                  </a>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-sm mb-1">Delivery Address</h4>
-                  <p className="text-sm">{viewingOrder.address.houseFlatBuilding}</p>
-                  <p className="text-sm">{viewingOrder.address.streetArea}</p>
-                  <p className="text-sm">{viewingOrder.address.city}, {viewingOrder.address.state}, {viewingOrder.address.country}</p>
-                  {viewingOrder.address.landmark && <p className="text-sm">Landmark: {viewingOrder.address.landmark}</p>}
-                  <p className="text-sm">Pincode: {viewingOrder.address.pincode}</p>
-                </div>
-              </div>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2, bgcolor: "action.hover", p: 2.5, borderRadius: 2 }}>
+                <Box>
+                  <Typography variant="body2" fontWeight={700} gutterBottom>Customer Info</Typography>
+                  <Typography variant="body2">{viewingOrder.address?.fullName || viewingOrder.userName || "Guest"}</Typography>
+                  <Typography variant="body2">{viewingOrder.address?.phone}</Typography>
+                  {viewingOrder.address?.phone && (
+                    <Box component="a" href={`https://wa.me/${viewingOrder.address.phone}`} target="_blank" rel="noreferrer" sx={{ display: "flex", alignItems: "center", gap: 0.5, color: "success.main", fontSize: "0.8rem", mt: 0.5 }}>
+                      <WhatsApp sx={{ fontSize: 14 }} /> Chat via WhatsApp
+                    </Box>
+                  )}
+                </Box>
+                <Box>
+                  <Typography variant="body2" fontWeight={700} gutterBottom>Delivery Address</Typography>
+                  <Typography variant="body2">{viewingOrder.address?.houseFlatBuilding}</Typography>
+                  <Typography variant="body2">{viewingOrder.address?.streetArea}</Typography>
+                  <Typography variant="body2">{viewingOrder.address?.city}, {viewingOrder.address?.state}, {viewingOrder.address?.country}</Typography>
+                  {viewingOrder.address?.landmark && <Typography variant="body2">Landmark: {viewingOrder.address.landmark}</Typography>}
+                  <Typography variant="body2">Pincode: {viewingOrder.address?.pincode}</Typography>
+                </Box>
+              </Box>
 
-              <div>
-                <h4 className="font-semibold mb-3">Order Items</h4>
-                <div className="border rounded-lg divide-y">
+              <Box>
+                <Typography variant="body2" fontWeight={700} gutterBottom>Items</Typography>
+                <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, overflow: "hidden" }}>
                   {viewingOrder.items.map((item: any, idx: number) => (
-                    <div key={idx} className="flex justify-between p-3 text-sm">
-                      <div className="flex gap-3">
-                        <span className="font-bold w-6">{item.qty}x</span>
-                        <span>{item.name}</span>
-                      </div>
-                      <span className="font-medium">₹{(item.price * item.qty).toFixed(2)}</span>
-                    </div>
+                    <Box key={idx} sx={{ display: "flex", justifyContent: "space-between", p: 1.5, borderBottom: idx < viewingOrder.items.length - 1 ? "1px solid" : "none", borderColor: "divider" }}>
+                      <Box sx={{ display: "flex", gap: 1 }}>
+                        <Typography variant="body2" fontWeight={700}>{item.qty}x</Typography>
+                        <Typography variant="body2">{item.name}</Typography>
+                      </Box>
+                      <Typography variant="body2" fontWeight={600}>{format(item.price * item.qty)}</Typography>
+                    </Box>
                   ))}
-                </div>
-              </div>
+                </Box>
+              </Box>
 
-              {/* Status History - Timeline */}
-              {viewingOrder.statusHistory && viewingOrder.statusHistory.length > 0 && (
-                <div>
-                  <h4 className="font-semibold mb-4 flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    Status History
-                  </h4>
-                  <div className="relative pl-6 space-y-4 border-l-2 border-muted">
-                    {viewingOrder.statusHistory.map((history: any, idx: number) => (
-                      <div key={idx} className="relative">
-                        {/* Timeline Dot */}
-                        <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-background ${
-                          history.status.toLowerCase() === 'pending' ? 'bg-yellow-500' :
-                          history.status.toLowerCase() === 'confirmed' ? 'bg-blue-500' :
-                          history.status.toLowerCase() === 'out for delivery' ? 'bg-purple-500' :
-                          history.status.toLowerCase() === 'delivered' ? 'bg-green-500' : 'bg-red-500'
-                        }`} />
-                        
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-muted/30 p-3 rounded-lg">
-                          <Badge className={getStatusColor(history.status)}>
-                            {history.status}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(history.timestamp).toLocaleString('en-IN', { 
-                              weekday: 'short', 
-                              year: 'numeric', 
-                              month: 'short', 
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </span>
-                        </div>
-                      </div>
+              {viewingOrder.statusHistory?.length > 0 && (
+                <Box>
+                  <Typography variant="body2" fontWeight={700} sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 2 }}>
+                    <AccessTime fontSize="small" /> Status Timeline
+                  </Typography>
+                  <Box sx={{ pl: 2, borderLeft: "2px solid", borderColor: "divider", display: "flex", flexDirection: "column", gap: 2 }}>
+                    {viewingOrder.statusHistory.map((h: any, i: number) => (
+                      <Box key={i} sx={{ position: "relative" }}>
+                        <Box sx={{ position: "absolute", left: -17, top: 6, width: 14, height: 14, borderRadius: "50%", bgcolor: getStatusColor(h.status) === "default" ? "grey.400" : `${getStatusColor(h.status)}.main`, border: "2px solid", borderColor: "background.paper" }} />
+                        <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1 }}>
+                          <Chip label={h.status} size="small" color={getStatusColor(h.status)} variant="outlined" sx={{ textTransform: "capitalize" }} />
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(h.timestamp).toLocaleString("en-IN", { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          </Typography>
+                        </Box>
+                      </Box>
                     ))}
-                  </div>
-                </div>
+                  </Box>
+                </Box>
               )}
 
-              <Separator />
-
-              <div className="flex justify-end pt-2">
-                <div className="w-full sm:w-48 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span>₹{(viewingOrder.totalAmount - (viewingOrder.deliveryCharge || 0)).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Delivery</span>
-                    <span>₹{(viewingOrder.deliveryCharge || 0).toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                    <span>Total</span>
-                    <span>₹{viewingOrder.totalAmount.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+              <Divider />
+              <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                <Box sx={{ minWidth: 180 }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+                    <Typography variant="body2" color="text.secondary">Subtotal</Typography>
+                    <Typography variant="body2">{format(viewingOrder.totalAmount - (viewingOrder.deliveryCharge || 0))}</Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                    <Typography variant="body2" color="text.secondary">Delivery</Typography>
+                    <Typography variant="body2">{format(viewingOrder.deliveryCharge || 0)}</Typography>
+                  </Box>
+                  <Divider sx={{ mb: 1 }} />
+                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Typography fontWeight={700}>Total</Typography>
+                    <Typography fontWeight={700}>{format(viewingOrder.totalAmount)}</Typography>
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
           )}
         </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={() => setViewingOrder(null)}>Close</Button>
+        </DialogActions>
       </Dialog>
 
-      {/* Delete Order Confirmation */}
-      <Dialog open={!!deleteOrderId} onOpenChange={(open) => !open && setDeleteOrderId(null)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Delete Order</DialogTitle>
-            <DialogDescription>Are you sure you want to delete this order? This action cannot be undone.</DialogDescription>
-          </DialogHeader>
-          <div className="flex gap-2 justify-end pt-4">
-            <Button variant="secondary" onClick={() => setDeleteOrderId(null)}>Cancel</Button>
-            <Button variant="destructive" onClick={() => deleteOrderId && handleDeleteOrder(deleteOrderId)} disabled={deleteOrderMutation.isPending}>
-              {deleteOrderMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Delete"}
-            </Button>
-          </div>
+      {/* Delete confirmation */}
+      <Dialog open={!!deleteOrderId} onClose={() => setDeleteOrderId(null)} maxWidth="xs" fullWidth>
+        <DialogTitle fontWeight={700}>Delete Order?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            This will permanently delete the order. This action cannot be undone.
+          </Typography>
         </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
+          <Button variant="outlined" onClick={() => setDeleteOrderId(null)}>Cancel</Button>
+          <Button variant="contained" color="error" onClick={() => deleteOrderId && handleDeleteOrder(deleteOrderId)} disabled={deleteOrderMutation.isPending}>
+            {deleteOrderMutation.isPending ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogActions>
       </Dialog>
-    </div>
+    </Box>
   );
 }

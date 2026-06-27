@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useListUsers, useDeleteUser } from "@/lib/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Loader2, Trash2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import {
+  Box, Button, Table, TableBody, TableCell, TableHead, TableRow, IconButton,
+  Typography, Chip, CircularProgress, Dialog, DialogTitle, DialogContent,
+  DialogActions,
+} from "@mui/material";
+import { Delete } from "@mui/icons-material";
 import { toast } from "@/hooks/use-toast";
 
 export default function AdminUsers() {
@@ -32,89 +33,81 @@ export default function AdminUsers() {
     );
   };
 
-  if (isLoading) return <div className="p-10 flex justify-center"><Loader2 className="animate-spin" /></div>;
-
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Users</h1>
-        <Badge variant="secondary">{users?.length || 0} Total</Badge>
-      </div>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Typography variant="h5" fontWeight={700}>Users</Typography>
+        <Chip label={`${users?.length || 0} Total`} variant="outlined" />
+      </Box>
 
-      <div className="border rounded-xl overflow-hidden bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Source</TableHead>
-              <TableHead>Address</TableHead>
-              <TableHead>IP</TableHead>
-              <TableHead>Joined</TableHead>
-              <TableHead className="w-[60px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users?.map((user) => (
-              <TableRow key={user._id}>
-                <TableCell className="font-medium">{user.name}</TableCell>
-                <TableCell>{user.phone || "-"}</TableCell>
-                <TableCell className="capitalize">{user.source || "Unknown"}</TableCell>
-                <TableCell className="max-w-[200px]">
-                  {user.address ? (
-                    typeof user.address === 'string' ? (
-                      <span className="truncate block" title={user.address}>{user.address}</span>
-                    ) : (
-                      <div className="text-xs">
-                        <div>{user.address.fullName}</div>
-                        <div className="truncate">{user.address.houseFlatBuilding}, {user.address.streetArea}</div>
-                        <div>{user.address.city}, {user.address.state} - {user.address.pincode}</div>
-                      </div>
-                    )
-                  ) : "-"}
-                </TableCell>
-                <TableCell className="font-mono text-xs">{user.ip}</TableCell>
-                <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-muted-foreground hover:text-destructive"
-                    onClick={() => setDeleteId(user._id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-            {(!users || users.length === 0) && (
+      {isLoading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", p: 6 }}><CircularProgress /></Box>
+      ) : (
+        <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, overflow: "auto" }}>
+          <Table sx={{ minWidth: 640 }}>
+            <TableHead sx={{ bgcolor: "action.hover" }}>
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">No users found.</TableCell>
+                <TableCell>Name</TableCell>
+                <TableCell>Phone</TableCell>
+                <TableCell>Source</TableCell>
+                <TableCell>Address</TableCell>
+                <TableCell>IP</TableCell>
+                <TableCell>Joined</TableCell>
+                <TableCell width={52} />
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHead>
+            <TableBody>
+              {users?.map((user) => (
+                <TableRow key={user._id} hover>
+                  <TableCell fontWeight={500}>{user.name}</TableCell>
+                  <TableCell>{user.phone || "—"}</TableCell>
+                  <TableCell sx={{ textTransform: "capitalize" }}>{user.source || "Unknown"}</TableCell>
+                  <TableCell sx={{ maxWidth: 200 }}>
+                    {user.address ? (
+                      typeof user.address === "string" ? (
+                        <Typography variant="body2" noWrap title={user.address}>{user.address}</Typography>
+                      ) : (
+                        <Box>
+                          <Typography variant="caption" display="block">{(user.address as any).fullName}</Typography>
+                          <Typography variant="caption" display="block" color="text.secondary" noWrap>
+                            {(user.address as any).houseFlatBuilding}, {(user.address as any).streetArea}
+                          </Typography>
+                          <Typography variant="caption" display="block" color="text.secondary">
+                            {(user.address as any).city}, {(user.address as any).state} — {(user.address as any).pincode}
+                          </Typography>
+                        </Box>
+                      )
+                    ) : "—"}
+                  </TableCell>
+                  <TableCell><Typography variant="caption" fontFamily="monospace">{user.ip}</Typography></TableCell>
+                  <TableCell><Typography variant="body2">{new Date(user.createdAt).toLocaleDateString()}</Typography></TableCell>
+                  <TableCell>
+                    <IconButton size="small" color="error" onClick={() => setDeleteId(user._id)}>
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {!users?.length && (
+                <TableRow><TableCell colSpan={7} sx={{ textAlign: "center", py: 6, color: "text.secondary" }}>No users found.</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Box>
+      )}
 
-      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete User?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the user and they will be asked to onboard again on next visit.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={handleDelete}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+      <Dialog open={!!deleteId} onClose={() => setDeleteId(null)} maxWidth="xs" fullWidth>
+        <DialogTitle fontWeight={700}>Delete User?</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            This will permanently delete the user. They will be asked to onboard again on their next visit.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
+          <Button variant="outlined" onClick={() => setDeleteId(null)}>Cancel</Button>
+          <Button variant="contained" color="error" onClick={handleDelete} disabled={deleteUser.isPending}>Delete</Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 }

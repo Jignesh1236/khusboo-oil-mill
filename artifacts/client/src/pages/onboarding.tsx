@@ -2,13 +2,26 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { useOnboardUser } from "@/lib/api-client-react";
 import { useStoreUser } from "@/hooks/use-store-user";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, User, MapPin, Phone, Heart, CheckCircle2, Store } from "lucide-react";
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  CircularProgress,
+  Checkbox,
+  FormControlLabel,
+} from "@mui/material";
+import {
+  ArrowForward,
+  Person,
+  LocationOn,
+  Phone,
+  Favorite,
+  CheckCircle,
+  Store,
+} from "@mui/icons-material";
 
 const SOURCE_OPTIONS = [
   { value: "instagram", label: "Instagram", emoji: "📸" },
@@ -20,17 +33,17 @@ const SOURCE_OPTIONS = [
 ];
 
 const STEPS = [
-  { id: "name", title: "What's your name?", subtitle: "We'll use this to personalise your experience.", icon: User },
-  { id: "source", title: "How did you find us?", subtitle: "We'd love to know where you came from.", icon: Heart },
-  { id: "phone", title: "Your phone number", subtitle: "Used for order updates. Completely optional.", icon: Phone },
-  { id: "address", title: "Your delivery address", subtitle: "Save time at checkout. You can skip this.", icon: MapPin },
-  { id: "terms", title: "Almost there!", subtitle: "Just one last thing before you start shopping.", icon: CheckCircle2 },
+  { id: "name", title: "What's your name?", subtitle: "We'll use this to personalise your experience.", Icon: Person },
+  { id: "source", title: "How did you find us?", subtitle: "We'd love to know where you came from.", Icon: Favorite },
+  { id: "phone", title: "Your phone number", subtitle: "Used for order updates. Completely optional.", Icon: Phone },
+  { id: "address", title: "Your delivery address", subtitle: "Save time at checkout. You can skip this.", Icon: LocationOn },
+  { id: "terms", title: "Almost there!", subtitle: "Just one last thing before you start shopping.", Icon: CheckCircle },
 ];
 
 const variants = {
-  enter: { opacity: 0, x: 60, scale: 0.97 },
+  enter: (d: number) => ({ opacity: 0, x: d * 60, scale: 0.97 }),
   center: { opacity: 1, x: 0, scale: 1 },
-  exit: { opacity: 0, x: -60, scale: 0.97 },
+  exit: (d: number) => ({ opacity: 0, x: d * -60, scale: 0.97 }),
 };
 
 export default function Onboarding() {
@@ -50,6 +63,7 @@ export default function Onboarding() {
   });
 
   const currentStep = STEPS[step];
+  const { Icon: StepIcon } = currentStep;
 
   const canProceed = () => {
     if (step === 0) return formData.name.trim().length >= 2;
@@ -74,16 +88,11 @@ export default function Onboarding() {
     setStep((s) => s - 1);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") goNext();
-  };
-
   const handleSubmit = async () => {
     setLoading(true);
     try {
       const ipRes = await fetch("https://api.ipify.org?format=json");
       const { ip } = await ipRes.json();
-
       onboardUser.mutate(
         { data: { name: formData.name, source: formData.source, phone: formData.phone, address: formData.address, ip } },
         {
@@ -103,39 +112,81 @@ export default function Onboarding() {
     }
   };
 
-  const StepIcon = currentStep.icon;
+  const skipLabel = step === 2 ? (formData.phone ? "Continue" : "Skip for now") : step === 3 ? (formData.address ? "Continue" : "Skip for now") : null;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f0f14] relative overflow-hidden px-4">
-      {/* Background blobs */}
-      <div className="absolute top-[-120px] left-[-120px] w-[400px] h-[400px] rounded-full bg-primary/20 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-100px] right-[-100px] w-[350px] h-[350px] rounded-full bg-purple-600/15 blur-[100px] pointer-events-none" />
+    <Box
+      sx={{
+        minHeight: "100dvh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        bgcolor: "#0f0f14",
+        position: "relative",
+        overflow: "hidden",
+        px: 2,
+      }}
+    >
+      <Box
+        sx={{
+          position: "absolute",
+          top: -120,
+          left: -120,
+          width: 400,
+          height: 400,
+          borderRadius: "50%",
+          bgcolor: "rgba(249,115,22,0.15)",
+          filter: "blur(120px)",
+          pointerEvents: "none",
+        }}
+      />
+      <Box
+        sx={{
+          position: "absolute",
+          bottom: -100,
+          right: -100,
+          width: 350,
+          height: 350,
+          borderRadius: "50%",
+          bgcolor: "rgba(139,92,246,0.12)",
+          filter: "blur(100px)",
+          pointerEvents: "none",
+        }}
+      />
 
-      {/* Store branding */}
-      <div className="flex items-center gap-2 mb-10 text-white/80">
-        <Store className="w-5 h-5 text-primary" />
-        <span className="text-sm font-semibold tracking-wide uppercase">MyStore</span>
-      </div>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 6, opacity: 0.7 }}>
+        <Store sx={{ color: "#f97316", fontSize: 20 }} />
+        <Typography
+          variant="caption"
+          sx={{ color: "#fff", fontWeight: 600, letterSpacing: 2, textTransform: "uppercase" }}
+        >
+          MyStore
+        </Typography>
+      </Box>
 
-      {/* Step dots */}
-      <div className="flex gap-2 mb-8">
+      <Box sx={{ display: "flex", gap: 1, mb: 5 }}>
         {STEPS.map((_, i) => (
-          <button
+          <Box
             key={i}
+            component="button"
             onClick={() => { if (i < step) { setDirection(-1); setStep(i); } }}
-            className={`transition-all duration-300 rounded-full ${
-              i === step
-                ? "w-6 h-2 bg-primary"
-                : i < step
-                ? "w-2 h-2 bg-primary/50 cursor-pointer"
-                : "w-2 h-2 bg-white/15"
-            }`}
+            sx={{
+              transition: "all 0.3s",
+              borderRadius: 99,
+              border: "none",
+              cursor: i < step ? "pointer" : "default",
+              bgcolor:
+                i === step ? "#f97316" : i < step ? "rgba(249,115,22,0.5)" : "rgba(255,255,255,0.12)",
+              width: i === step ? 24 : 8,
+              height: 8,
+              p: 0,
+            }}
           />
         ))}
-      </div>
+      </Box>
 
-      {/* Card */}
-      <div className="w-full max-w-md relative">
+      <Box sx={{ width: "100%", maxWidth: 440, position: "relative" }}>
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
             key={step}
@@ -145,162 +196,247 @@ export default function Onboarding() {
             animate="center"
             exit="exit"
             transition={{ duration: 0.28, ease: [0.25, 0.1, 0.25, 1] }}
-            className="bg-[#1a1a24] border border-white/8 rounded-2xl p-8 shadow-2xl"
           >
-            {/* Icon */}
-            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/15 border border-primary/25 mb-6">
-              <StepIcon className="w-5 h-5 text-primary" />
-            </div>
+            <Box
+              sx={{
+                bgcolor: "#1a1a24",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: 4,
+                p: 4,
+                boxShadow: "0 25px 50px rgba(0,0,0,0.5)",
+              }}
+            >
+              <Box
+                sx={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 3,
+                  bgcolor: "rgba(249,115,22,0.12)",
+                  border: "1px solid rgba(249,115,22,0.25)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  mb: 3,
+                }}
+              >
+                <StepIcon sx={{ color: "#f97316", fontSize: 22 }} />
+              </Box>
 
-            {/* Title */}
-            <h1 className="text-2xl font-bold text-white mb-1">{currentStep.title}</h1>
-            <p className="text-white/50 text-sm mb-7">{currentStep.subtitle}</p>
+              <Typography variant="h5" fontWeight={700} sx={{ color: "#fff", mb: 0.5 }}>
+                {currentStep.title}
+              </Typography>
+              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.45)", mb: 3.5 }}>
+                {currentStep.subtitle}
+              </Typography>
 
-            {/* Step content */}
-            {step === 0 && (
-              <Input
-                autoFocus
-                placeholder="e.g. Rahul Sharma"
-                value={formData.name}
-                onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
-                onKeyDown={handleKeyDown}
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-primary h-12 text-base"
-                data-testid="input-name"
-              />
-            )}
-
-            {step === 1 && (
-              <div className="grid grid-cols-2 gap-2">
-                {SOURCE_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setFormData((p) => ({ ...p, source: opt.value }))}
-                    className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all duration-200 ${
-                      formData.source === opt.value
-                        ? "bg-primary/20 border-primary text-white"
-                        : "bg-white/5 border-white/10 text-white/70 hover:bg-white/8 hover:text-white"
-                    }`}
-                    data-testid={`option-source-${opt.value}`}
-                  >
-                    <span className="text-lg leading-none">{opt.emoji}</span>
-                    <span className="text-sm font-medium">{opt.label}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {step === 2 && (
-              <Input
-                autoFocus
-                type="tel"
-                placeholder="e.g. 9876543210"
-                value={formData.phone}
-                onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
-                onKeyDown={handleKeyDown}
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-primary h-12 text-base"
-                data-testid="input-phone"
-              />
-            )}
-
-            {step === 3 && (
-              <Textarea
-                autoFocus
-                placeholder="e.g. 12, Gandhi Nagar, Vadodara - 390001"
-                value={formData.address}
-                onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))}
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-primary text-base resize-none"
-                rows={3}
-                data-testid="input-address"
-              />
-            )}
-
-            {step === 4 && (
-              <div className="space-y-5">
-                {/* Summary */}
-                <div className="bg-white/5 border border-white/8 rounded-xl p-4 space-y-2 text-sm">
-                  {(
-                    [
-                      { label: "Name", value: formData.name },
-                      { label: "Source", value: SOURCE_OPTIONS.find((o) => o.value === formData.source)?.label ?? "" },
-                      ...(formData.phone ? [{ label: "Phone", value: formData.phone }] : []),
-                      ...(formData.address ? [{ label: "Address", value: formData.address }] : []),
-                    ] as { label: string; value: string }[]
-                  ).map((item) => (
-                    <div key={item.label} className="flex gap-2">
-                      <span className="text-white/40 w-16 shrink-0">{item.label}</span>
-                      <span className="text-white/80 font-medium">{item.value}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Terms */}
-                <label className="flex items-start gap-3 cursor-pointer group" data-testid="checkbox-terms">
-                  <Checkbox
-                    checked={formData.termsAccepted}
-                    onCheckedChange={(c) => setFormData((p) => ({ ...p, termsAccepted: !!c }))}
-                    className="mt-0.5 border-white/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                  />
-                  <span className="text-sm text-white/50 group-hover:text-white/70 transition-colors leading-snug">
-                    I agree to the{" "}
-                    <a href="/terms-of-service" className="text-primary underline underline-offset-2" target="_blank">
-                      Terms of Service
-                    </a>{" "}
-                    and{" "}
-                    <a href="/privacy-policy" className="text-primary underline underline-offset-2" target="_blank">
-                      Privacy Policy
-                    </a>
-                  </span>
-                </label>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex gap-3 mt-7">
-              {step > 0 && (
-                <Button
-                  variant="ghost"
-                  onClick={goBack}
-                  className="text-white/50 hover:text-white hover:bg-white/5"
-                  data-testid="button-back"
-                >
-                  Back
-                </Button>
+              {step === 0 && (
+                <TextField
+                  autoFocus
+                  placeholder="e.g. Rahul Sharma"
+                  value={formData.name}
+                  onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
+                  onKeyDown={(e) => e.key === "Enter" && goNext()}
+                  fullWidth
+                  inputProps={{ "data-testid": "input-name" }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      bgcolor: "rgba(255,255,255,0.05)",
+                      color: "#fff",
+                      "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
+                      "&:hover fieldset": { borderColor: "rgba(255,255,255,0.3)" },
+                      "&.Mui-focused fieldset": { borderColor: "#f97316" },
+                    },
+                    "& input::placeholder": { color: "rgba(255,255,255,0.3)", opacity: 1 },
+                  }}
+                />
               )}
 
-              <Button
-                onClick={goNext}
-                disabled={!canProceed() || loading}
-                className="flex-1 h-11 font-semibold gap-2 bg-primary hover:bg-primary/90 text-white disabled:opacity-30 disabled:cursor-not-allowed"
-                data-testid="button-continue"
-              >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Setting up...
-                  </span>
-                ) : step === 4 ? (
-                  "Start Shopping"
-                ) : step === 2 || step === 3 ? (
-                  <>
-                    {formData[step === 2 ? "phone" : "address"] ? "Continue" : "Skip for now"}
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                ) : (
-                  <>
-                    Continue
-                    <ArrowRight className="w-4 h-4" />
-                  </>
+              {step === 1 && (
+                <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
+                  {SOURCE_OPTIONS.map((opt) => (
+                    <Box
+                      key={opt.value}
+                      component="button"
+                      onClick={() => setFormData((p) => ({ ...p, source: opt.value }))}
+                      data-testid={`option-source-${opt.value}`}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                        p: 1.5,
+                        borderRadius: 2,
+                        border: "1px solid",
+                        borderColor:
+                          formData.source === opt.value
+                            ? "#f97316"
+                            : "rgba(255,255,255,0.1)",
+                        bgcolor:
+                          formData.source === opt.value
+                            ? "rgba(249,115,22,0.18)"
+                            : "rgba(255,255,255,0.04)",
+                        color: formData.source === opt.value ? "#fff" : "rgba(255,255,255,0.65)",
+                        cursor: "pointer",
+                        transition: "all 0.18s",
+                        textAlign: "left",
+                      }}
+                    >
+                      <span style={{ fontSize: 18, lineHeight: 1 }}>{opt.emoji}</span>
+                      <span style={{ fontSize: "0.8rem", fontWeight: 500 }}>{opt.label}</span>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+
+              {step === 2 && (
+                <TextField
+                  autoFocus
+                  type="tel"
+                  placeholder="e.g. 9876543210"
+                  value={formData.phone}
+                  onChange={(e) => setFormData((p) => ({ ...p, phone: e.target.value }))}
+                  onKeyDown={(e) => e.key === "Enter" && goNext()}
+                  fullWidth
+                  inputProps={{ "data-testid": "input-phone" }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      bgcolor: "rgba(255,255,255,0.05)",
+                      color: "#fff",
+                      "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
+                      "&:hover fieldset": { borderColor: "rgba(255,255,255,0.3)" },
+                      "&.Mui-focused fieldset": { borderColor: "#f97316" },
+                    },
+                    "& input::placeholder": { color: "rgba(255,255,255,0.3)", opacity: 1 },
+                  }}
+                />
+              )}
+
+              {step === 3 && (
+                <TextField
+                  autoFocus
+                  multiline
+                  rows={3}
+                  placeholder="e.g. 12, Gandhi Nagar, Vadodara - 390001"
+                  value={formData.address}
+                  onChange={(e) => setFormData((p) => ({ ...p, address: e.target.value }))}
+                  fullWidth
+                  inputProps={{ "data-testid": "input-address" }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      bgcolor: "rgba(255,255,255,0.05)",
+                      color: "#fff",
+                      "& fieldset": { borderColor: "rgba(255,255,255,0.1)" },
+                      "&:hover fieldset": { borderColor: "rgba(255,255,255,0.3)" },
+                      "&.Mui-focused fieldset": { borderColor: "#f97316" },
+                    },
+                    "& textarea::placeholder": { color: "rgba(255,255,255,0.3)", opacity: 1 },
+                  }}
+                />
+              )}
+
+              {step === 4 && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+                  <Box
+                    sx={{
+                      bgcolor: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      borderRadius: 2,
+                      p: 2,
+                    }}
+                  >
+                    {[
+                      { label: "Name", value: formData.name },
+                      { label: "Source", value: SOURCE_OPTIONS.find((o) => o.value === formData.source)?.label || "" },
+                      ...(formData.phone ? [{ label: "Phone", value: formData.phone }] : []),
+                      ...(formData.address ? [{ label: "Address", value: formData.address }] : []),
+                    ].map((item) => (
+                      <Box key={item.label} sx={{ display: "flex", gap: 2, mb: 1 }}>
+                        <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.35)", minWidth: 56 }}>
+                          {item.label}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", fontWeight: 500 }}>
+                          {item.value}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+
+                  <FormControlLabel
+                    data-testid="checkbox-terms"
+                    control={
+                      <Checkbox
+                        checked={formData.termsAccepted}
+                        onChange={(e) =>
+                          setFormData((p) => ({ ...p, termsAccepted: e.target.checked }))
+                        }
+                        sx={{
+                          color: "rgba(255,255,255,0.2)",
+                          "&.Mui-checked": { color: "#f97316" },
+                        }}
+                      />
+                    }
+                    label={
+                      <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.5)" }}>
+                        I agree to the{" "}
+                        <a
+                          href="/terms-of-service"
+                          target="_blank"
+                          style={{ color: "#f97316", textDecoration: "underline" }}
+                        >
+                          Terms of Service
+                        </a>{" "}
+                        and{" "}
+                        <a
+                          href="/privacy-policy"
+                          target="_blank"
+                          style={{ color: "#f97316", textDecoration: "underline" }}
+                        >
+                          Privacy Policy
+                        </a>
+                      </Typography>
+                    }
+                  />
+                </Box>
+              )}
+
+              <Box sx={{ display: "flex", gap: 1.5, mt: 4 }}>
+                {step > 0 && (
+                  <Button
+                    onClick={goBack}
+                    data-testid="button-back"
+                    sx={{ color: "rgba(255,255,255,0.4)", "&:hover": { color: "#fff", bgcolor: "rgba(255,255,255,0.05)" } }}
+                  >
+                    Back
+                  </Button>
                 )}
-              </Button>
-            </div>
+                <Button
+                  onClick={goNext}
+                  disabled={!canProceed() || loading}
+                  data-testid="button-continue"
+                  variant="contained"
+                  endIcon={loading ? <CircularProgress size={16} sx={{ color: "rgba(255,255,255,0.8)" }} /> : step < STEPS.length - 1 ? <ArrowForward /> : null}
+                  sx={{
+                    flex: 1,
+                    bgcolor: "#f97316",
+                    "&:hover": { bgcolor: "#ea580c" },
+                    "&.Mui-disabled": { bgcolor: "rgba(249,115,22,0.3)", color: "rgba(255,255,255,0.4)" },
+                    py: 1.5,
+                    fontWeight: 700,
+                  }}
+                >
+                  {loading ? "Setting up..." : step === STEPS.length - 1 ? "Start Shopping" : skipLabel || "Continue"}
+                </Button>
+              </Box>
+            </Box>
           </motion.div>
         </AnimatePresence>
-      </div>
+      </Box>
 
-      {/* Step counter */}
-      <p className="text-white/25 text-xs mt-6">
+      <Typography
+        variant="caption"
+        sx={{ color: "rgba(255,255,255,0.2)", mt: 4 }}
+      >
         Step {step + 1} of {STEPS.length}
-      </p>
-    </div>
+      </Typography>
+    </Box>
   );
 }

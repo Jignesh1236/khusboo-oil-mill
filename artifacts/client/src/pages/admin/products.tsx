@@ -1,22 +1,16 @@
 import { useState } from "react";
-import { 
-  useListProducts, 
-  useCreateProduct, 
-  useUpdateProduct, 
-  useDeleteProduct,
-  useListCategories,
-  getListProductsQueryKey,
-  type ProductInput
+import {
+  useListProducts, useCreateProduct, useUpdateProduct, useDeleteProduct,
+  useListCategories, getListProductsQueryKey, type ProductInput,
 } from "@/lib/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, Trash2, Plus, Loader2 } from "lucide-react";
+import {
+  Box, Button, TextField, Dialog, DialogTitle, DialogContent, DialogActions,
+  Table, TableBody, TableCell, TableHead, TableRow, IconButton, Typography,
+  Switch, FormControlLabel, MenuItem, Select, InputLabel, FormControl,
+  CircularProgress, Stack, Chip, Grid, Paper,
+} from "@mui/material";
+import { Edit, Delete, Add } from "@mui/icons-material";
 import { ImageUploader } from "@/components/image-uploader";
 import { toast } from "@/hooks/use-toast";
 
@@ -25,256 +19,178 @@ export default function AdminProducts() {
   const [page, setPage] = useState(1);
   const { data: productsPage, isLoading } = useListProducts({ page, limit: 20 });
   const { data: categories } = useListCategories();
-  
+
   const createMutation = useCreateProduct();
   const updateMutation = useUpdateProduct();
   const deleteMutation = useDeleteProduct();
 
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  
-  const defaultForm: ProductInput = { 
-    name: "", 
-    price: 0, 
-    discountPercent: 0, 
-    category: "", 
-    stock: 0, 
-    images: [], 
-    deliveryTime: "", 
-    freeDelivery: false, 
-    description: "", 
-    featured: false 
-  };
-  
-  const [formData, setFormData] = useState<ProductInput>(defaultForm);
 
-  const resetForm = () => {
-    setFormData(defaultForm);
-    setEditingId(null);
-  };
+  const defaultForm: ProductInput = { name: "", price: 0, discountPercent: 0, category: "", stock: 0, images: [], deliveryTime: "", freeDelivery: false, description: "", featured: false };
+  const [form, setForm] = useState<ProductInput>(defaultForm);
+
+  const resetForm = () => { setForm(defaultForm); setEditingId(null); };
 
   const handleEdit = (p: any) => {
-    setFormData({ 
-      name: p.name, 
-      price: p.price, 
-      discountPercent: p.discountPercent || 0, 
-      category: p.category, 
-      stock: p.stock, 
-      images: p.images || [], 
-      deliveryTime: p.deliveryTime || "", 
-      freeDelivery: p.freeDelivery || false, 
-      description: p.description || "", 
-      featured: p.featured || false 
-    });
+    setForm({ name: p.name, price: p.price, discountPercent: p.discountPercent || 0, category: p.category, stock: p.stock, images: p.images || [], deliveryTime: p.deliveryTime || "", freeDelivery: p.freeDelivery || false, description: p.description || "", featured: p.featured || false });
     setEditingId(p._id);
-    setIsDialogOpen(true);
+    setIsOpen(true);
   };
 
   const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this product?")) {
-      deleteMutation.mutate(
-        { productId: id },
-        {
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() });
-            toast({ title: "Product deleted" });
-          }
-        }
-      );
-    }
+    if (!confirm("Delete this product?")) return;
+    deleteMutation.mutate({ productId: id }, { onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() }); toast({ title: "Product deleted" }); } });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.category) {
-      toast({ title: "Error", description: "Please select a category", variant: "destructive" });
-      return;
-    }
-
-    if (editingId) {
-      updateMutation.mutate(
-        { productId: editingId, data: formData },
-        {
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() });
-            setIsDialogOpen(false);
-            resetForm();
-            toast({ title: "Product updated" });
-          }
-        }
-      );
-    } else {
-      createMutation.mutate(
-        { data: formData },
-        {
-          onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() });
-            setIsDialogOpen(false);
-            resetForm();
-            toast({ title: "Product created" });
-          }
-        }
-      );
-    }
+    if (!form.category) { toast({ title: "Error", description: "Please select a category", variant: "destructive" }); return; }
+    const opts = {
+      onSuccess: () => { queryClient.invalidateQueries({ queryKey: getListProductsQueryKey() }); setIsOpen(false); resetForm(); toast({ title: editingId ? "Product updated" : "Product created" }); }
+    };
+    if (editingId) updateMutation.mutate({ productId: editingId, data: form }, opts);
+    else createMutation.mutate({ data: form }, opts);
   };
 
-  if (isLoading) return <div className="p-10 flex justify-center"><Loader2 className="animate-spin" /></div>;
+  const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl font-bold">Products</h1>
-        <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) resetForm(); }}>
-          <DialogTrigger asChild>
-            <Button><Plus className="w-4 h-4 mr-2" /> Add Product</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingId ? "Edit" : "Add"} Product</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-6 pt-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Name</label>
-                  <Input value={formData.name} onChange={e => setFormData(p => ({...p, name: e.target.value}))} required />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Category</label>
-                  <Select value={formData.category} onValueChange={v => setFormData(p => ({...p, category: v}))}>
-                    <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
-                    <SelectContent>
-                      {categories?.map(c => (
-                        <SelectItem key={c._id} value={c.name}>{c.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Price (₹)</label>
-                  <Input type="number" step="0.01" value={formData.price} onChange={e => setFormData(p => ({...p, price: parseFloat(e.target.value)}))} required />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Discount Percent</label>
-                  <Input type="number" value={formData.discountPercent} onChange={e => setFormData(p => ({...p, discountPercent: parseInt(e.target.value)}))} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Stock</label>
-                  <Input type="number" value={formData.stock} onChange={e => setFormData(p => ({...p, stock: parseInt(e.target.value)}))} required />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Delivery Time (e.g. "2-3 days")</label>
-                  <Input value={formData.deliveryTime} onChange={e => setFormData(p => ({...p, deliveryTime: e.target.value}))} />
-                </div>
-              </div>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Typography variant="h5" fontWeight={700}>Products</Typography>
+        <Button variant="contained" startIcon={<Add />} onClick={() => { resetForm(); setIsOpen(true); }}>Add Product</Button>
+      </Box>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Description</label>
-                <Textarea rows={4} value={formData.description} onChange={e => setFormData(p => ({...p, description: e.target.value}))} />
-              </div>
+      {isLoading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", p: 6 }}><CircularProgress /></Box>
+      ) : (
+        <>
+          {/* Desktop table */}
+          <Box sx={{ display: { xs: "none", md: "block" }, border: "1px solid", borderColor: "divider", borderRadius: 2, overflow: "hidden" }}>
+            <Table>
+              <TableHead sx={{ bgcolor: "action.hover" }}>
+                <TableRow>
+                  <TableCell>Product</TableCell>
+                  <TableCell>Category</TableCell>
+                  <TableCell>Price</TableCell>
+                  <TableCell>Stock</TableCell>
+                  <TableCell align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {productsPage?.products.map((p) => (
+                  <TableRow key={p._id} hover>
+                    <TableCell>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                        <Box component="img" src={p.images?.[0]?.replace("/upload/", "/upload/w_80,h_80,c_fill,q_auto/") || "https://via.placeholder.com/40"} alt="" sx={{ width: 40, height: 40, borderRadius: 1.5, objectFit: "cover", bgcolor: "action.hover" }} />
+                        <Typography variant="body2" fontWeight={500} sx={{ maxWidth: 240, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell><Typography variant="body2">{p.category}</Typography></TableCell>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={600}>₹{p.price.toFixed(2)}</Typography>
+                      {p.discountPercent ? <Chip label={`${p.discountPercent}% off`} size="small" color="error" sx={{ ml: 0.5, fontSize: "0.65rem", height: 18 }} /> : null}
+                    </TableCell>
+                    <TableCell><Chip label={p.stock} size="small" color={p.stock > 5 ? "success" : p.stock > 0 ? "warning" : "error"} variant="outlined" /></TableCell>
+                    <TableCell align="right">
+                      <IconButton size="small" onClick={() => handleEdit(p)}><Edit fontSize="small" /></IconButton>
+                      <IconButton size="small" color="error" onClick={() => handleDelete(p._id)}><Delete fontSize="small" /></IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {!productsPage?.products?.length && (
+                  <TableRow><TableCell colSpan={5} sx={{ textAlign: "center", py: 6, color: "text.secondary" }}>No products found.</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Box>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Main Image</label>
-                <ImageUploader 
-                  value={formData.images?.[0] || ""} 
-                  onChange={url => setFormData(p => ({...p, images: [url]}))} 
-                  folder="products" 
-                />
-              </div>
-
-              <div className="flex flex-wrap gap-6">
-                <div className="flex items-center space-x-2">
-                  <Switch checked={formData.freeDelivery} onCheckedChange={c => setFormData(p => ({...p, freeDelivery: c}))} />
-                  <label className="text-sm font-medium">Free Delivery</label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch checked={formData.featured} onCheckedChange={c => setFormData(p => ({...p, featured: c}))} />
-                  <label className="text-sm font-medium">Featured Product</label>
-                </div>
-              </div>
-
-              <Button type="submit" className="w-full" disabled={createMutation.isPending || updateMutation.isPending}>
-                Save Product
-              </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Desktop Table View */}
-      <div className="border rounded-xl overflow-hidden bg-card hidden md:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Product</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Price</TableHead>
-              <TableHead>Stock</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+          {/* Mobile cards */}
+          <Stack spacing={1.5} sx={{ display: { xs: "flex", md: "none" } }}>
             {productsPage?.products.map((p) => (
-              <TableRow key={p._id}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    <img src={p.images?.[0]?.replace('/upload/', '/upload/w_100,h_100,c_fill,q_auto/') || "https://via.placeholder.com/40"} alt="" className="w-10 h-10 rounded bg-muted object-cover" />
-                    <span className="font-medium line-clamp-1">{p.name}</span>
-                  </div>
-                </TableCell>
-                <TableCell>{p.category}</TableCell>
-                <TableCell>₹{p.price.toFixed(2)}</TableCell>
-                <TableCell>{p.stock}</TableCell>
-                <TableCell className="text-right space-x-2">
-                  <Button variant="ghost" size="icon" onClick={() => handleEdit(p)}><Edit className="w-4 h-4" /></Button>
-                  <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(p._id)}><Trash2 className="w-4 h-4" /></Button>
-                </TableCell>
-              </TableRow>
+              <Paper key={p._id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                <Box sx={{ display: "flex", gap: 2 }}>
+                  <Box component="img" src={p.images?.[0]?.replace("/upload/", "/upload/w_120,h_120,c_fill,q_auto/") || "https://via.placeholder.com/80"} alt="" sx={{ width: 72, height: 72, borderRadius: 2, objectFit: "cover", flexShrink: 0 }} />
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="body2" fontWeight={600}>{p.name}</Typography>
+                    <Typography variant="caption" color="text.secondary">{p.category}</Typography>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
+                      <Typography variant="body2" fontWeight={700}>₹{p.price.toFixed(2)}</Typography>
+                      <Typography variant="caption" color="text.secondary">Stock: {p.stock}</Typography>
+                    </Box>
+                  </Box>
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+                    <IconButton size="small" onClick={() => handleEdit(p)}><Edit fontSize="small" /></IconButton>
+                    <IconButton size="small" color="error" onClick={() => handleDelete(p._id)}><Delete fontSize="small" /></IconButton>
+                  </Box>
+                </Box>
+              </Paper>
             ))}
-            {(!productsPage?.products || productsPage.products.length === 0) && (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">No products found.</TableCell>
-              </TableRow>
+            {!productsPage?.products?.length && (
+              <Typography color="text.secondary" sx={{ textAlign: "center", py: 6 }}>No products found.</Typography>
             )}
-          </TableBody>
-        </Table>
-      </div>
+          </Stack>
 
-      {/* Mobile Card View */}
-      <div className="space-y-4 md:hidden">
-        {productsPage?.products.map((p) => (
-          <div key={p._id} className="border rounded-xl p-4 bg-card">
-            <div className="flex items-start gap-3">
-              <img 
-                src={p.images?.[0]?.replace('/upload/', '/upload/w_100,h_100,c_fill,q_auto/') || "https://via.placeholder.com/80"} 
-                alt="" 
-                className="w-20 h-20 rounded bg-muted object-cover shrink-0" 
-              />
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium line-clamp-2">{p.name}</h3>
-                <p className="text-sm text-muted-foreground">{p.category}</p>
-                <p className="font-semibold text-lg mt-1">₹{p.price.toFixed(2)}</p>
-                <p className="text-sm">Stock: {p.stock}</p>
-              </div>
-            </div>
-            <div className="flex gap-2 mt-4 justify-end">
-              <Button variant="ghost" size="sm" onClick={() => handleEdit(p)}><Edit className="w-4 h-4 mr-1" /> Edit</Button>
-              <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(p._id)}><Trash2 className="w-4 h-4 mr-1" /> Delete</Button>
-            </div>
-          </div>
-        ))}
-        {(!productsPage?.products || productsPage.products.length === 0) && (
-          <div className="text-center py-10 text-muted-foreground border rounded-xl bg-card">No products found.</div>
-        )}
-      </div>
-      
-      {/* Basic pagination */}
-      {productsPage && productsPage.pages > 1 && (
-        <div className="flex justify-center gap-2">
-          <Button variant="outline" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</Button>
-          <div className="flex items-center px-4">Page {page} of {productsPage.pages}</div>
-          <Button variant="outline" disabled={page === productsPage.pages} onClick={() => setPage(p => p + 1)}>Next</Button>
-        </div>
+          {productsPage && productsPage.pages > 1 && (
+            <Box sx={{ display: "flex", justifyContent: "center", gap: 1, alignItems: "center" }}>
+              <Button variant="outlined" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>Prev</Button>
+              <Typography variant="body2">Page {page} of {productsPage.pages}</Typography>
+              <Button variant="outlined" disabled={page === productsPage.pages} onClick={() => setPage((p) => p + 1)}>Next</Button>
+            </Box>
+          )}
+        </>
       )}
-    </div>
+
+      <Dialog open={isOpen} onClose={() => { setIsOpen(false); resetForm(); }} maxWidth="md" fullWidth>
+        <DialogTitle fontWeight={700}>{editingId ? "Edit" : "Add"} Product</DialogTitle>
+        <Box component="form" onSubmit={handleSubmit}>
+          <DialogContent dividers sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <TextField label="Name" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} required fullWidth />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 6 }}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Category</InputLabel>
+                  <Select label="Category" value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}>
+                    {categories?.map((c) => <MenuItem key={c._id} value={c.name}>{c.name}</MenuItem>)}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <TextField label="Price (₹)" type="number" inputProps={{ step: "0.01", min: 0 }} value={form.price} onChange={(e) => setForm((p) => ({ ...p, price: parseFloat(e.target.value) || 0 }))} required fullWidth />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <TextField label="Discount %" type="number" inputProps={{ min: 0, max: 100 }} value={form.discountPercent} onChange={(e) => setForm((p) => ({ ...p, discountPercent: parseInt(e.target.value) || 0 }))} fullWidth />
+              </Grid>
+              <Grid size={{ xs: 12, sm: 4 }}>
+                <TextField label="Stock" type="number" inputProps={{ min: 0 }} value={form.stock} onChange={(e) => setForm((p) => ({ ...p, stock: parseInt(e.target.value) || 0 }))} required fullWidth />
+              </Grid>
+              <Grid size={12}>
+                <TextField label="Delivery Time (e.g. 2-3 days)" value={form.deliveryTime} onChange={(e) => setForm((p) => ({ ...p, deliveryTime: e.target.value }))} fullWidth />
+              </Grid>
+              <Grid size={12}>
+                <TextField label="Description" multiline rows={3} value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} fullWidth />
+              </Grid>
+              <Grid size={12}>
+                <Typography variant="body2" fontWeight={500} gutterBottom>Main Image</Typography>
+                <ImageUploader value={form.images?.[0] || ""} onChange={(url) => setForm((p) => ({ ...p, images: [url] }))} folder="products" />
+              </Grid>
+              <Grid size={12}>
+                <Stack direction="row" spacing={3}>
+                  <FormControlLabel control={<Switch checked={form.freeDelivery} onChange={(e) => setForm((p) => ({ ...p, freeDelivery: e.target.checked }))} />} label="Free Delivery" />
+                  <FormControlLabel control={<Switch checked={form.featured} onChange={(e) => setForm((p) => ({ ...p, featured: e.target.checked }))} />} label="Featured" />
+                </Stack>
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, py: 2, gap: 1 }}>
+            <Button variant="outlined" onClick={() => { setIsOpen(false); resetForm(); }}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={isPending}>{isPending ? "Saving..." : "Save Product"}</Button>
+          </DialogActions>
+        </Box>
+      </Dialog>
+    </Box>
   );
 }
